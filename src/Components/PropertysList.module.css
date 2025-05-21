@@ -1,16 +1,17 @@
 .listContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.5rem 0.5rem;
   background: #f4f7fb;
   min-height: 100vh;
-  align-items: stretch;
+  padding: 1.5rem 1rem;
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
 }
 
 .propertyCard {
   width: 100%;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   background: #fff;
@@ -23,129 +24,118 @@
   position: relative;
 }
 
+.propertyImage {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 0;
+  display: block;
+  background: #e0e7ef;
+}
+
 .propertyCard:hover {
   box-shadow: 0 8px 32px rgba(44, 62, 80, 0.16), 0 3px 8px rgba(44, 62, 80, 0.08);
   transform: translateY(-2px) scale(1.01);
 }
 
-.carouselContainer {
-  width: 100%;
-  background: linear-gradient(135deg, #e0e7ef 0%, #f4f7fb 100%);
+.propertyDetails {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid #e6eaf0;
-}
-
-.propertyImage {
-  border-radius: 0;
-  object-fit: cover;
-  height: 180px;
-  width: 100%;
-  box-shadow: 0 2px 12px rgba(44, 62, 80, 0.08);
-  transition: filter 0.2s;
-}
-
-.infoContainer {
-  padding: 1.2rem 1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: #fff;
-}
-
-.propertyTitle {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  color: #1a2233;
-  letter-spacing: 0.01em;
-}
-
-.propertyDesc {
-  font-size: 0.98rem;
-  color: #5a6a85;
-  margin-bottom: 1rem;
-  line-height: 1.5;
+  flex-wrap: wrap;
+  gap: 0.7rem 1.5rem;
+  font-size: 1rem;
+  color: #34495e;
+  margin-top: 0.5rem;
+  border-top: 1px solid #e6eaf0;
+  padding-top: 1rem;
 }
 
 .propertyDetails {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-  font-size: 0.95rem;
+  gap: 0.7rem 1.5rem;
+  font-size: 1rem;
   color: #34495e;
   margin-top: 0.5rem;
+  border-top: 1px solid #e6eaf0;
+  padding-top: 1rem;
+  padding-left: 0.7rem;
+  /* margem à esquerda */
 }
 
-.propertyDetails span {
+.infoContainer {
+  padding: 1.2rem 1.2rem 1.5rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+  /* Espaço entre informações e o bottom do card */
+}
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem 0.7rem;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
+  align-items: center;
+}
+
+.filterInput {
+  flex: 1 1 110px;
+  min-width: 90px;
+  max-width: 160px;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #e6eaf0;
+  border-radius: 6px;
+  font-size: 0.98rem;
   background: #f4f7fb;
-  border-radius: 8px;
-  padding: 0.25rem 0.7rem;
-  font-weight: 500;
-  box-shadow: 0 1px 2px rgba(44, 62, 80, 0.03);
+}
+
+.searchInput {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto 1.5rem auto;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e6eaf0;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #f4f7fb;
+  display: block;
 }
 
 /* Tablet */
 @media (min-width: 600px) {
-  .listContainer {
+  .gridContainer {
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
-    padding: 2rem 1.5rem;
   }
-  .propertyCard {
-    border-radius: 20px;
-  }
+
   .propertyImage {
-    height: 220px;
+    height: 200px;
   }
-  .infoContainer {
-    padding: 1.5rem 2rem;
-  }
-  .propertyTitle {
-    font-size: 1.3rem;
-  }
-  .propertyDesc {
-    font-size: 1.05rem;
-  }
-  .propertyDetails {
-    font-size: 1rem;
-    gap: 0.7rem 1.5rem;
+
+  .listContainer {
+    padding: 2rem 2.5rem;
+    /* mais margem lateral em tablets */
   }
 }
 
 /* Desktop */
 @media (min-width: 900px) {
+  .gridContainer {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2.5rem;
+  }
+
+  .propertyImage {
+    height: 220px;
+  }
+
   .listContainer {
     align-items: center;
-    padding: 2.5rem 0;
-  }
-  .propertyCard {
-    flex-direction: row;
-    max-width: 900px;
-    border-radius: 22px;
-  }
-  .carouselContainer {
-    flex: 1 1 340px;
-    max-width: 340px;
-    min-width: 240px;
-    border-bottom: none;
-    border-right: 1px solid #e6eaf0;
-  }
-  .propertyImage {
-    height: 260px;
-  }
-  .infoContainer {
-    flex: 2 1 0;
-    padding: 2rem 2.5rem;
-  }
-  .propertyTitle {
-    font-size: 1.7rem;
-  }
-  .propertyDesc {
-    font-size: 1.08rem;
-  }
-  .propertyDetails {
-    font-size: 1.02rem;
-    gap: 1.2rem 2.2rem;
+    padding: 2.5rem 4vw;
   }
 }

@@ -68,7 +68,8 @@ const ImageSelector = ({ property, closeImageSelector }) => {
         estilo: '',
         tipo: '',
         acabamento: '',
-        retirar: ''
+        retirar: '',
+        observacoes: ''
       }))
     );
     setStep('form');
@@ -92,10 +93,25 @@ const ImageSelector = ({ property, closeImageSelector }) => {
   };
 
   const handleSubmit = () => {
-    // Aqui você pode enviar forms para onde precisar
-    alert('Formulários enviados com sucesso!');
-    console.log("forms: ", forms);
-    closeImageSelector();
+    console.log("forms ", forms);
+    fetch("https://cfd4-2804-14c-125-846e-1c99-4381-16c7-7569.ngrok-free.app/api/update-images-airtable", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(forms)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          alert('Formulários enviados com sucesso!');
+          closeImageSelector();
+        } else {
+          alert('Erro ao enviar formulários. Tente novamente.');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Erro ao enviar formulários. Tente novamente.');
+      });
   };
 
   if (step === 'select') {
@@ -240,6 +256,16 @@ const ImageSelector = ({ property, closeImageSelector }) => {
               <option key={ret} value={ret}>{ret}</option>
             ))}
           </select>
+        </div>
+        <div className="mb-3">
+          <label className="form-label">Observações</label>
+          <textarea
+            className="form-control"
+            value={currentForm.observacoes}
+            onChange={e => handleFormChange('observacoes', e.target.value)}
+            rows={3}
+            placeholder="Digite observações adicionais (opcional)"
+          />
         </div>
         <div className={styles.formNav}>
           <button
