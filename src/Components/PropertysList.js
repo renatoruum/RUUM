@@ -5,7 +5,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 const PAGE_SIZE = 24;
 
-const PropertysList = ({ propertyList, selectProperty, currentPage, setCurrentPage }) => {
+const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToShow }) => {
   const [filters, setFilters] = useState({
     minValor: '',
     maxValor: '',
@@ -21,6 +21,7 @@ const PropertysList = ({ propertyList, selectProperty, currentPage, setCurrentPa
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedDesc, setExpandedDesc] = useState({});
+  const [imageLoaded, setImageLoaded] = useState({});
 
   // Filtro aplicado sobre a lista
   const filteredList = propertyList.filter((property) => {
@@ -52,92 +53,29 @@ const PropertysList = ({ propertyList, selectProperty, currentPage, setCurrentPa
     return true;
   });
 
-  // Paginação sobre o resultado filtrado
-  const totalPages = Math.ceil(filteredList.length / PAGE_SIZE);
-  const paginatedList = filteredList.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
   // Coleta opções únicas para selects dinâmicos
   const tipos = Array.from(new Set(propertyList.map(p => p.fields.Tipo).filter(Boolean)));
   const ufs = Array.from(new Set(propertyList.map(p => p.fields.UF).filter(Boolean)));
 
-  // Resetar para página 1 ao mudar filtro ou busca
+  // Resetar para o início ao mudar filtro ou busca
   const handleFilterChange = (fn) => (e) => {
     setFilters(f => fn(f, e));
-    setCurrentPage(1);
   };
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1);
   };
 
-  // Renderização dos botões de página estilo Google
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-    const pages = [];
-    const maxPagesToShow = 7;
-    let startPage = Math.max(1, currentPage - 3);
-    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-
-    if (endPage - startPage < maxPagesToShow - 1) {
-      startPage = Math.max(1, endPage - maxPagesToShow + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(
-        <button
-          key={i}
-          className={`btn btn-sm mx-1 ${i === currentPage ? 'btn-primary' : 'btn-outline-primary'}`}
-          onClick={() => setCurrentPage(i)}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', margin: '2rem 0' }}>
-        <button
-          className="btn btn-sm btn-outline-secondary mx-1"
-          onClick={() => setCurrentPage(1)}
-          disabled={currentPage === 1}
-        >
-          {'<<'}
-        </button>
-        <button
-          className="btn btn-sm btn-outline-secondary mx-1"
-          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-          disabled={currentPage === 1}
-        >
-          {'<'}
-        </button>
-        {pages}
-        <button
-          className="btn btn-sm btn-outline-secondary mx-1"
-          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-          disabled={currentPage === totalPages}
-        >
-          {'>'}
-        </button>
-        <button
-          className="btn btn-sm btn-outline-secondary mx-1"
-          onClick={() => setCurrentPage(totalPages)}
-          disabled={currentPage === totalPages}
-        >
-          {'>>'}
-        </button>
-      </div>
-    );
-  };
+  // Lista incremental
+  const paginatedList = filteredList.slice(0, itemsToShow);
 
   // Ao clicar, envie o índice global do imóvel selecionado
   const setProperty = (property, idx) => {
-    selectProperty(property, (currentPage - 1) * PAGE_SIZE + idx);
+    selectProperty(property, idx);
   };
 
+  // Função para pré-carregar imagens dos próximos imóveis
   useEffect(() => {
-    const start = currentPage * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-    const nextPage = filteredList.slice(start, end);
+    const nextPage = filteredList.slice(itemsToShow, itemsToShow + PAGE_SIZE);
     nextPage.forEach(property => {
       const images = property.fields.Fotos_URLs
         ? property.fields.Fotos_URLs.split('\n').filter(Boolean)
@@ -147,13 +85,17 @@ const PropertysList = ({ propertyList, selectProperty, currentPage, setCurrentPa
         img.src = url;
       });
     });
-  }, [currentPage, filteredList]);
+  }, [itemsToShow, filteredList]);
 
   // Função para verificar se a descrição deve ser colapsada
   const shouldClamp = (desc) => {
     if (!desc) return false;
-    // Considera clamp se mais de 5 linhas ou mais de 350 caracteres
     return desc.split('\n').length > 5 || desc.length > 350;
+  };
+
+  // Botão para carregar mais imóveis
+  const handleLoadMore = () => {
+    setItemsToShow(prev => prev + PAGE_SIZE);
   };
 
   return (
@@ -277,11 +219,30 @@ const PropertysList = ({ propertyList, selectProperty, currentPage, setCurrentPa
                   <div className="carousel-inner">
                     {images.map((imgUrl, i) => (
                       <div className={`carousel-item${i === 0 ? ' active' : ''}`} key={imgUrl}>
+                        {!imageLoaded[`${id}-${i}`] && (
+                          <div
+                            style={{
+                              width: '100%',
+                              height: '180px',
+                              background: '#eee',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            className={styles.skeleton}
+                          >
+                            <span style={{ color: '#bbb' }}>Carregando imagem...</span>
+                          </div>
+                        )}
                         <img
                           src={imgUrl}
                           loading="lazy"
                           className={`d-block w-100 ${styles.propertyImage}`}
                           alt={`Foto ${i + 1}`}
+                          style={imageLoaded[`${id}-${i}`] ? {} : { display: 'none' }}
+                          onLoad={() =>
+                            setImageLoaded(prev => ({ ...prev, [`${id}-${i}`]: true }))
+                          }
                         />
                       </div>
                     ))}
@@ -305,7 +266,6 @@ const PropertysList = ({ propertyList, selectProperty, currentPage, setCurrentPa
                 <div
                   className={`${styles.propertyDesc} ${isClamped ? styles.clamped : ''}`}
                   style={{ position: 'relative' }}
-                  onClick={e => e.stopPropagation()}
                 >
                   {desc}
                   {shouldClamp(desc) && (
@@ -331,9 +291,9 @@ const PropertysList = ({ propertyList, selectProperty, currentPage, setCurrentPa
                       }}
                     >
                       {expandedDesc[id] ? (
-                        <span title="Mostrar menos" style={{fontWeight: 600}}>&#9650;</span>
+                        <span title="Mostrar menos" style={{ fontWeight: 600 }}>&#9650;</span>
                       ) : (
-                        <span title="Mostrar mais" style={{fontWeight: 600}}>&#9660;</span>
+                        <span title="Mostrar mais" style={{ fontWeight: 600 }}>&#9660;</span>
                       )}
                     </button>
                   )}
@@ -359,7 +319,52 @@ const PropertysList = ({ propertyList, selectProperty, currentPage, setCurrentPa
           );
         })}
       </div>
-      {renderPagination()}
+      {itemsToShow < filteredList.length && (
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '2rem 0' }}>
+          <button
+            style={{
+              position: 'fixed',
+              right: '1rem',
+              bottom: '2rem',
+              backgroundColor: '#68bf6c',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '50%',
+              width: '48px',
+              height: '48px',
+              fontSize: '2rem',
+              boxShadow: '0 2px 8px rgba(104,191,108,0.15)',
+              zIndex: 1000,
+              cursor: 'pointer',
+              display: 'flex', // centraliza conteúdo
+              alignItems: 'center', // centraliza verticalmente
+              justifyContent: 'center' // centraliza horizontalmente
+            }}
+            title="Voltar ao topo"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" className="bi bi-arrow-up" viewBox="0 0 16 16">
+              <path fillRule="evenodd" d="M8 12a.5.5 0 0 0 .5-.5V4.707l3.147 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 4.707V11.5A.5.5 0 0 0 8 12z" />
+            </svg>
+          </button>
+          <button
+            className="btn"
+            style={{
+              backgroundColor: '#68bf6c',
+              color: '#fff',
+              border: 'none',
+              fontWeight: 600,
+              fontSize: '1.1em',
+              padding: '0.7em 2.2em',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(104,191,108,0.10)'
+            }}
+            onClick={handleLoadMore}
+          >
+            Carregar Próxima Página
+          </button>
+        </div>
+      )}
     </div>
   );
 };
