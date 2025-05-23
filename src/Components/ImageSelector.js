@@ -124,40 +124,55 @@ const ImageSelector = ({ property, closeImageSelector }) => {
           onClick={closeImageSelector}
         ></button>
         <h4 className={styles.title}>Selecione as imagens para Virtual Staging</h4>
+
         <div className={styles.imagesGrid}>
-          {images.map((imgUrl, idx) => (
-            <div
-              key={imgUrl}
-              className={`${styles.imageBox} ${selectedImages.includes(imgUrl) ? styles.selected : ''}`}
-              onClick={() => toggleSelect(imgUrl)}
-              tabIndex={0}
-              role="button"
-              aria-pressed={selectedImages.includes(imgUrl)}
-            >
-              <img src={imgUrl} alt={`Foto ${idx + 1}`} className={styles.image} />
-              <button
-                type="button"
-                className={styles.zoomBtn}
-                tabIndex={-1}
-                onClick={e => {
-                  e.stopPropagation();
-                  setZoomImg(imgUrl);
-                }}
-                aria-label="Ampliar imagem"
+          {images.map((imgUrl, idx) => {
+            const selected = selectedImages.includes(imgUrl);
+            return (
+              <div
+                key={imgUrl}
+                className={`${styles.imageBox} ${selected ? styles.selected : ''}`}
+                tabIndex={0}
+                role="group"
+                aria-pressed={selected}
               >
-                <svg width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-                  <circle cx="7" cy="7" r="6" stroke="#007bff" strokeWidth="2" fill="none" />
-                  <line x1="11" y1="11" x2="15" y2="15" stroke="#007bff" strokeWidth="2" />
-                </svg>
-              </button>
-              {selectedImages.includes(imgUrl) && (
-                <div className={styles.checkOverlay}>
-                  <span className="bi bi-check-circle-fill"></span>
-                </div>
-              )}
-            </div>
-          ))}
+                <img
+                  src={imgUrl}
+                  alt={`Foto ${idx + 1}`}
+                  className={styles.image}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setZoomImg(imgUrl);
+                  }}
+                  style={{ cursor: 'zoom-in' }}
+                />
+                {/* Checkbox visual */}
+                <button
+                  type="button"
+                  className={styles.checkBtn}
+                  aria-label={selected ? "Desmarcar imagem" : "Selecionar imagem"}
+                  onClick={e => {
+                    e.stopPropagation();
+                    toggleSelect(imgUrl);
+                  }}
+                >
+                  {selected ? (
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                      <circle cx="14" cy="14" r="13" fill="#68bf6c" stroke="#fff" strokeWidth="2" />
+                      <polyline points="9,15 13,19 19,11" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : (
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                      <circle cx="14" cy="14" r="13" fill="#fff" stroke="#68bf6c" strokeWidth="2" />
+                    </svg>
+                  )}
+                </button>
+                {/* Removido o botão de zoom */}
+              </div>
+            );
+          })}
         </div>
+
         {/* Modal de zoom */}
         {zoomImg && (
           <div className={styles.zoomModal} onClick={() => setZoomImg(null)}>

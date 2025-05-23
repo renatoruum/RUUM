@@ -98,25 +98,6 @@
   margin-top: 1.2rem;
 }
 
-.zoomBtn {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: rgba(255,255,255,0.85);
-  border: none;
-  border-radius: 50%;
-  padding: 0.3em;
-  cursor: pointer;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-.zoomBtn:hover {
-  background: #e0e7ef;
-}
-
 .zoomModal {
   position: fixed;
   inset: 0;
@@ -150,6 +131,30 @@
   cursor: pointer;
   z-index: 1001;
   line-height: 1;
+}
+
+.checkBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  z-index: 2;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.15s;
+}
+.checkBtn:active {
+  transform: scale(0.95);
+}
+.imageBox {
+  position: relative;
+  /* ...existing code... */
+}
+.selected {
+  border: 2.5px solid #68bf6c;
+  box-shadow: 0 4px 16px rgba(104,191,108,0.10);
 }
 
 @media (min-width: 600px) {

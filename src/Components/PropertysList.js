@@ -1,12 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './PropertysList.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
-const PropertysList = ({ propertyList, selectProperty }) => {
+const PAGE_SIZE = 24;
 
-  console.log('PropertysList', propertyList);
-
+const PropertysList = ({ propertyList, selectProperty, currentPage, setCurrentPage }) => {
   const [filters, setFilters] = useState({
     minValor: '',
     maxValor: '',
@@ -21,10 +20,7 @@ const PropertysList = ({ propertyList, selectProperty }) => {
     tipo: '',
   });
   const [searchTerm, setSearchTerm] = useState('');
-
-  const setProperty = (property) => {
-    selectProperty(property);
-  };
+  const [expandedDesc, setExpandedDesc] = useState({});
 
   // Filtro aplicado sobre a lista
   const filteredList = propertyList.filter((property) => {
@@ -44,135 +40,236 @@ const PropertysList = ({ propertyList, selectProperty }) => {
     if (filters.uf && fields.UF && fields.UF !== filters.uf) return false;
     if (filters.tipo && fields.Tipo && fields.Tipo !== filters.tipo) return false;
     if (
-    searchTerm &&
-    !(
-      (fields.Bairro && fields.Bairro.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (fields.Tipo && fields.Tipo.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (fields.Codigo && fields.Codigo.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
-  ) {
-    return false;
-  }
+      searchTerm &&
+      !(
+        (fields.Bairro && fields.Bairro.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (fields.Tipo && fields.Tipo.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (fields.Codigo && fields.Codigo.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    ) {
+      return false;
+    }
     return true;
   });
+
+  // Paginação sobre o resultado filtrado
+  const totalPages = Math.ceil(filteredList.length / PAGE_SIZE);
+  const paginatedList = filteredList.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   // Coleta opções únicas para selects dinâmicos
   const tipos = Array.from(new Set(propertyList.map(p => p.fields.Tipo).filter(Boolean)));
   const ufs = Array.from(new Set(propertyList.map(p => p.fields.UF).filter(Boolean)));
 
+  // Resetar para página 1 ao mudar filtro ou busca
+  const handleFilterChange = (fn) => (e) => {
+    setFilters(f => fn(f, e));
+    setCurrentPage(1);
+  };
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
+  // Renderização dos botões de página estilo Google
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    const pages = [];
+    const maxPagesToShow = 7;
+    let startPage = Math.max(1, currentPage - 3);
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage < maxPagesToShow - 1) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          className={`btn btn-sm mx-1 ${i === currentPage ? 'btn-primary' : 'btn-outline-primary'}`}
+          onClick={() => setCurrentPage(i)}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '2rem 0' }}>
+        <button
+          className="btn btn-sm btn-outline-secondary mx-1"
+          onClick={() => setCurrentPage(1)}
+          disabled={currentPage === 1}
+        >
+          {'<<'}
+        </button>
+        <button
+          className="btn btn-sm btn-outline-secondary mx-1"
+          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          disabled={currentPage === 1}
+        >
+          {'<'}
+        </button>
+        {pages}
+        <button
+          className="btn btn-sm btn-outline-secondary mx-1"
+          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+          disabled={currentPage === totalPages}
+        >
+          {'>'}
+        </button>
+        <button
+          className="btn btn-sm btn-outline-secondary mx-1"
+          onClick={() => setCurrentPage(totalPages)}
+          disabled={currentPage === totalPages}
+        >
+          {'>>'}
+        </button>
+      </div>
+    );
+  };
+
+  // Ao clicar, envie o índice global do imóvel selecionado
+  const setProperty = (property, idx) => {
+    selectProperty(property, (currentPage - 1) * PAGE_SIZE + idx);
+  };
+
+  useEffect(() => {
+    const start = currentPage * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    const nextPage = filteredList.slice(start, end);
+    nextPage.forEach(property => {
+      const images = property.fields.Fotos_URLs
+        ? property.fields.Fotos_URLs.split('\n').filter(Boolean)
+        : [];
+      images.forEach(url => {
+        const img = new window.Image();
+        img.src = url;
+      });
+    });
+  }, [currentPage, filteredList]);
+
+  // Função para verificar se a descrição deve ser colapsada
+  const shouldClamp = (desc) => {
+    if (!desc) return false;
+    // Considera clamp se mais de 5 linhas ou mais de 350 caracteres
+    return desc.split('\n').length > 5 || desc.length > 350;
+  };
+
   return (
     <div className={styles.listContainer}>
       {/* Filtros */}
-        <form className={styles.filterBar}>
-          <input
-            type="number"
-            className={styles.filterInput}
-            placeholder="Valor mín."
-            value={filters.minValor}
-            onChange={e => setFilters(f => ({ ...f, minValor: e.target.value }))}
-            min={0}
-          />
-          <input
-            type="number"
-            className={styles.filterInput}
-            placeholder="Valor máx."
-            value={filters.maxValor}
-            onChange={e => setFilters(f => ({ ...f, maxValor: e.target.value }))}
-            min={0}
-          />
-          <input
-            type="number"
-            className={styles.filterInput}
-            placeholder="Área mín."
-            value={filters.minArea}
-            onChange={e => setFilters(f => ({ ...f, minArea: e.target.value }))}
-            min={0}
-          />
-          <input
-            type="number"
-            className={styles.filterInput}
-            placeholder="Área máx."
-            value={filters.maxArea}
-            onChange={e => setFilters(f => ({ ...f, maxArea: e.target.value }))}
-            min={0}
-          />
-          <input
-            type="number"
-            className={styles.filterInput}
-            placeholder="Quartos"
-            value={filters.quartos}
-            onChange={e => setFilters(f => ({ ...f, quartos: e.target.value }))}
-            min={0}
-          />
-          <input
-            type="number"
-            className={styles.filterInput}
-            placeholder="Banheiros"
-            value={filters.banheiros}
-            onChange={e => setFilters(f => ({ ...f, banheiros: e.target.value }))}
-            min={0}
-          />
-          <input
-            type="number"
-            className={styles.filterInput}
-            placeholder="Suítes"
-            value={filters.suites}
-            onChange={e => setFilters(f => ({ ...f, suites: e.target.value }))}
-            min={0}
-          />
-          <input
-            type="number"
-            className={styles.filterInput}
-            placeholder="Vagas"
-            value={filters.vagas}
-            onChange={e => setFilters(f => ({ ...f, vagas: e.target.value }))}
-            min={0}
-          />
-          <input
-            type="text"
-            className={styles.filterInput}
-            placeholder="Cidade"
-            value={filters.cidade}
-            onChange={e => setFilters(f => ({ ...f, cidade: e.target.value }))}
-          />
-          <select
-            className={styles.filterInput}
-            value={filters.uf}
-            onChange={e => setFilters(f => ({ ...f, uf: e.target.value }))}
-          >
-            <option value="">UF</option>
-            {ufs.map(uf => <option key={uf} value={uf}>{uf}</option>)}
-          </select>
-          <select
-            className={styles.filterInput}
-            value={filters.tipo}
-            onChange={e => setFilters(f => ({ ...f, tipo: e.target.value }))}
-          >
-            <option value="">Tipo</option>
-            {tipos.map(tipo => <option key={tipo} value={tipo}>{tipo}</option>)}
-          </select>
-        </form>
+      <form className={styles.filterBar}>
+        <input
+          type="number"
+          className={styles.filterInput}
+          placeholder="Valor mín."
+          value={filters.minValor}
+          onChange={handleFilterChange((f, e) => ({ ...f, minValor: e.target.value }))}
+          min={0}
+        />
+        <input
+          type="number"
+          className={styles.filterInput}
+          placeholder="Valor máx."
+          value={filters.maxValor}
+          onChange={handleFilterChange((f, e) => ({ ...f, maxValor: e.target.value }))}
+          min={0}
+        />
+        <input
+          type="number"
+          className={styles.filterInput}
+          placeholder="Área mín."
+          value={filters.minArea}
+          onChange={handleFilterChange((f, e) => ({ ...f, minArea: e.target.value }))}
+          min={0}
+        />
+        <input
+          type="number"
+          className={styles.filterInput}
+          placeholder="Área máx."
+          value={filters.maxArea}
+          onChange={handleFilterChange((f, e) => ({ ...f, maxArea: e.target.value }))}
+          min={0}
+        />
+        <input
+          type="number"
+          className={styles.filterInput}
+          placeholder="Quartos"
+          value={filters.quartos}
+          onChange={handleFilterChange((f, e) => ({ ...f, quartos: e.target.value }))}
+          min={0}
+        />
+        <input
+          type="number"
+          className={styles.filterInput}
+          placeholder="Banheiros"
+          value={filters.banheiros}
+          onChange={handleFilterChange((f, e) => ({ ...f, banheiros: e.target.value }))}
+          min={0}
+        />
+        <input
+          type="number"
+          className={styles.filterInput}
+          placeholder="Suítes"
+          value={filters.suites}
+          onChange={handleFilterChange((f, e) => ({ ...f, suites: e.target.value }))}
+          min={0}
+        />
+        <input
+          type="number"
+          className={styles.filterInput}
+          placeholder="Vagas"
+          value={filters.vagas}
+          onChange={handleFilterChange((f, e) => ({ ...f, vagas: e.target.value }))}
+          min={0}
+        />
         <input
           type="text"
-          className={`${styles.filterInput} ${styles.searchInput}`}
-          placeholder="Buscar por nome do imóvel, bairro ou código"
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          style={{ marginBottom: '1.5rem', width: '100%' }}
+          className={styles.filterInput}
+          placeholder="Cidade"
+          value={filters.cidade}
+          onChange={handleFilterChange((f, e) => ({ ...f, cidade: e.target.value }))}
         />
-        {/* Lista de imóveis */}
+        <select
+          className={styles.filterInput}
+          value={filters.uf}
+          onChange={handleFilterChange((f, e) => ({ ...f, uf: e.target.value }))}
+        >
+          <option value="">UF</option>
+          {ufs.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+        </select>
+        <select
+          className={styles.filterInput}
+          value={filters.tipo}
+          onChange={handleFilterChange((f, e) => ({ ...f, tipo: e.target.value }))}
+        >
+          <option value="">Tipo</option>
+          {tipos.map(tipo => <option key={tipo} value={tipo}>{tipo}</option>)}
+        </select>
+      </form>
+      <input
+        type="text"
+        className={`${styles.filterInput} ${styles.searchInput}`}
+        placeholder="Buscar por nome do imóvel, bairro ou código"
+        value={searchTerm}
+        onChange={handleSearchChange}
+        style={{ marginBottom: '1.5rem', width: '100%' }}
+      />
+      {/* Lista de imóveis */}
       <div className={styles.gridContainer}>
-        {filteredList.map((property) => {
+        {paginatedList.map((property, idx) => {
           const { fields, id } = property;
           const images = fields.Fotos_URLs
             ? fields.Fotos_URLs.split('\n').filter(Boolean)
             : [];
-
+          const desc = fields.Descricao || 'Sem descrição.';
+          const isClamped = shouldClamp(desc) && !expandedDesc[id];
           return (
             <div
               className={styles.propertyCard}
               key={id}
-              onClick={() => setProperty(property)}
+              onClick={() => setProperty(property, idx)}
               style={{ cursor: 'pointer' }}
             >
               <div className={styles.carouselContainer}>
@@ -180,7 +277,12 @@ const PropertysList = ({ propertyList, selectProperty }) => {
                   <div className="carousel-inner">
                     {images.map((imgUrl, i) => (
                       <div className={`carousel-item${i === 0 ? ' active' : ''}`} key={imgUrl}>
-                        <img src={imgUrl} className={`d-block w-100 ${styles.propertyImage}`} alt={`Foto ${i + 1}`} />
+                        <img
+                          src={imgUrl}
+                          loading="lazy"
+                          className={`d-block w-100 ${styles.propertyImage}`}
+                          alt={`Foto ${i + 1}`}
+                        />
                       </div>
                     ))}
                   </div>
@@ -200,7 +302,42 @@ const PropertysList = ({ propertyList, selectProperty }) => {
               </div>
               <div className={styles.infoContainer}>
                 <h5 className={styles.propertyTitle}>{fields.Tipo || 'Imóvel'} - {fields.Bairro || ''}</h5>
-                <p className={styles.propertyDesc}>{fields.Descricao || 'Sem descrição.'}</p>
+                <div
+                  className={`${styles.propertyDesc} ${isClamped ? styles.clamped : ''}`}
+                  style={{ position: 'relative' }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {desc}
+                  {shouldClamp(desc) && (
+                    <button
+                      type="button"
+                      className="btn btn-link p-0"
+                      style={{
+                        fontSize: '1.3em',
+                        color: '#68bf6c',
+                        position: 'absolute',
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(255,255,255,0.85)',
+                        zIndex: 2,
+                        textDecoration: 'none'
+                      }}
+                      onClick={e => {
+                        e.stopPropagation();
+                        setExpandedDesc(prev => ({
+                          ...prev,
+                          [id]: !prev[id]
+                        }));
+                      }}
+                    >
+                      {expandedDesc[id] ? (
+                        <span title="Mostrar menos" style={{fontWeight: 600}}>&#9650;</span>
+                      ) : (
+                        <span title="Mostrar mais" style={{fontWeight: 600}}>&#9660;</span>
+                      )}
+                    </button>
+                  )}
+                </div>
                 <div className={styles.propertyDetails}>
                   <span>
                     <strong>Valor:</strong>{' '}
@@ -222,6 +359,7 @@ const PropertysList = ({ propertyList, selectProperty }) => {
           );
         })}
       </div>
+      {renderPagination()}
     </div>
   );
 };
