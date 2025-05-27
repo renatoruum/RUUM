@@ -1,43 +1,14 @@
 import { useState, useEffect } from 'react';
 import styles from './ImageSelector.module.css';
+import SmartStageForm from './SmartStageForm';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
-const ESTILOS = [
-  'Clássico Atualizado',
-  'Elegância Descontraída',
-  'Industrial Urbano',
-  'Refúgio à Beira-Mar',
-  'Satisfação Chic'
-];
-
-const TIPOS = [
-  'Sala de estar + jantar',
-  'Sala de estar',
-  'Sala de jantar',
-  'Quarto',
-  'Sala de jantar + cozinha',
-  'Cozinha',
-  'Varanda',
-  'Lavanderia',
-  'Banheiro',
-  'Escritório'
-];
-
-const ACABAMENTOS = [
-  'SIM',
-  'NÃO'
-];
-
-const RETIRAR = [
-  'SIM',
-  'NÃO'
-];
-
 const ImageSelector = ({ property, closeImageSelector }) => {
+
   const [images, setImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
-  const [step, setStep] = useState('select'); // 'select' | 'form'
+  const [step, setStep] = useState('select');
   const [formIndex, setFormIndex] = useState(0);
   const [forms, setForms] = useState([]);
   const [zoomImg, setZoomImg] = useState(null);
@@ -65,6 +36,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
     setForms(
       selectedImages.map((imgUrl) => ({
         imgUrl,
+        originalIndex: images.indexOf(imgUrl),
         estilo: '',
         tipo: '',
         acabamento: '',
@@ -94,7 +66,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
 
   const handleSubmit = () => {
     console.log("forms ", forms);
-    fetch("https://cfd4-2804-14c-125-846e-1c99-4381-16c7-7569.ngrok-free.app/api/update-images-airtable", {
+    fetch("https://9304-177-92-71-250.ngrok-free.app/api/update-images-airtable", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(forms)
@@ -115,7 +87,9 @@ const ImageSelector = ({ property, closeImageSelector }) => {
   };
 
   if (step === 'select') {
+
     return (
+
       <div className={styles.selectorWrapper}>
         <button
           type="button"
@@ -167,7 +141,6 @@ const ImageSelector = ({ property, closeImageSelector }) => {
                     </svg>
                   )}
                 </button>
-                {/* Removido o botão de zoom */}
               </div>
             );
           })}
@@ -211,116 +184,19 @@ const ImageSelector = ({ property, closeImageSelector }) => {
         aria-label="Close"
         onClick={closeImageSelector}
       ></button>
-      <h4 className={styles.title}>Configuração da Imagem {formIndex + 1} de {forms.length}</h4>
-      <div className={styles.formImageBox}>
-        <img src={currentForm.imgUrl} alt={`Selecionada ${formIndex + 1}`} className={styles.formImage} />
-      </div>
-      <form className={styles.formArea} onSubmit={e => e.preventDefault()}>
-        <div className="mb-3">
-          <label className="form-label">Estilo de ambientação</label>
-          <select
-            className="form-select"
-            value={currentForm.estilo}
-            onChange={e => handleFormChange('estilo', e.target.value)}
-            required
-          >
-            <option value="">Selecione...</option>
-            {ESTILOS.map((estilo) => (
-              <option key={estilo} value={estilo}>{estilo}</option>
-            ))}
-          </select>
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Tipo de ambiente</label>
-          <select
-            className="form-select"
-            value={currentForm.tipo}
-            onChange={e => handleFormChange('tipo', e.target.value)}
-            required
-          >
-            <option value="">Selecione...</option>
-            {TIPOS.map((tipo) => (
-              <option key={tipo} value={tipo}>{tipo}</option>
-            ))}
-          </select>
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Colocar/alterar acabamentos?</label>
-          <select
-            className="form-select"
-            value={currentForm.acabamento}
-            onChange={e => handleFormChange('acabamento', e.target.value)}
-            required
-          >
-            <option value="">Selecione...</option>
-            {ACABAMENTOS.map((acab) => (
-              <option key={acab} value={acab}>{acab}</option>
-            ))}
-          </select>
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Retirar mobiliário/decoração?</label>
-          <select
-            className="form-select"
-            value={currentForm.retirar}
-            onChange={e => handleFormChange('retirar', e.target.value)}
-            required
-          >
-            <option value="">Selecione...</option>
-            {RETIRAR.map((ret) => (
-              <option key={ret} value={ret}>{ret}</option>
-            ))}
-          </select>
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Observações</label>
-          <textarea
-            className="form-control"
-            value={currentForm.observacoes}
-            onChange={e => handleFormChange('observacoes', e.target.value)}
-            rows={3}
-            placeholder="Digite observações adicionais (opcional)"
-          />
-        </div>
-        <div className={styles.formNav}>
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            onClick={handlePrev}
-            disabled={formIndex === 0}
-          >
-            Anterior
-          </button>
-          {formIndex < forms.length - 1 ? (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleNext}
-              disabled={
-                !currentForm.estilo ||
-                !currentForm.tipo ||
-                !currentForm.acabamento ||
-                !currentForm.retirar
-              }
-            >
-              Próxima
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn btn-success"
-              onClick={handleSubmit}
-              disabled={forms.some(f =>
-                !f.estilo || !f.tipo || !f.acabamento || !f.retirar
-              )}
-            >
-              Enviar
-            </button>
-          )}
-        </div>
-      </form>
+      <SmartStageForm
+        currentForm={currentForm}
+        formIndex={formIndex}
+        forms={forms}
+        handleFormChange={handleFormChange}
+        handlePrev={handlePrev}
+        handleNext={handleNext}
+        handleSubmit={handleSubmit}
+        selectedIndexes={forms.map(f => f.originalIndex)}
+        property={property}
+      />
     </div>
   );
 };
 
-export default ImageSelector
+export default ImageSelector;

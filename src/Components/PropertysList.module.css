@@ -124,6 +124,21 @@
   max-height: 7.5em; /* Aproximadamente 5 linhas */
 }
 
+.loader {
+  border: 6px solid #e6eaf0;
+  border-top: 6px solid #68bf6c;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  animation: spin 1s linear infinite;
+  margin: 2rem auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
+
 /* Tablet */
 @media (min-width: 600px) {
   .gridContainer {
