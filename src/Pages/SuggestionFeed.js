@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import PropertysList from '../Components/PropertysList';
 import ImageSelector from '../Components/ImageSelector';
 import Airtable from 'airtable';
-import './SuggestionFeed.module.css';
+import { useClientPlan } from '../Contexts/ClientPlanProvider';
+import styles from './SuggestionFeed.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
@@ -16,7 +17,7 @@ const SuggestionFeed = () => {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsToShow, setItemsToShow] = useState(PAGE_SIZE);
-  const [clientPlan, setClientPlan] = useState(null);
+  const { clientPlan, setClientPlan } = useClientPlan();
 
   // Função para buscar o plano do cliente pelo nome
   const getClientPlan = async (clientName) => {
@@ -103,8 +104,8 @@ const SuggestionFeed = () => {
   return (
     <div>
       <div className='mt-3'>
-        <h3>Feed de Oportunidades</h3>
-        <p>{topMessage}</p>
+        <h3 className={`${styles.title_font}`}>Feed de Oportunidades</h3>
+        <p className={`${styles.paragraph_font}`}>{topMessage}</p>
         <div>
           {showPropertysList && (
             <>

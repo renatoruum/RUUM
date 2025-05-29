@@ -1,4 +1,8 @@
-import React, { useEffect } from 'react';
+//Reaclt
+import React, { useEffect, useState } from 'react';
+//Components
+import DialogBox from './DialogBox';
+//Styles
 import styles from './ImageSelector.module.css';
 
 const SmartStageForm = ({
@@ -12,6 +16,13 @@ const SmartStageForm = ({
     selectedIndexes,
     property
 }) => {
+    const [openDialog, setOpenDialog] = useState(false);
+    const [action, setAction] = useState('');
+    const [questionDialog, setQuestionDialog] = useState('');
+
+    const imgQty = forms.length;
+    const credits = imgQty * 100;
+
     // Recupera o índice da imagem selecionada
     const selectedIndex = selectedIndexes[formIndex];
 
@@ -32,6 +43,25 @@ const SmartStageForm = ({
             ? property.fields['Fotos_URLs']
             : property.fields['Fotos_URLs'].split('\n').filter(Boolean);
         linkPaginaImovel = fotosUrls[selectedIndex] || '';
+    }
+
+    const openDialogBox = () => {
+        setAction('action');
+        const msg = 
+            imgQty === 1
+                ? 'O processamento desta imagem consumirá 100 créditos. Você tem certeza que deseja enviar este pedido?'
+                : `O processamento destas ${imgQty} imagens consumirá ${credits} créditos. Você tem certeza que deseja enviar este pedido?`
+        setQuestionDialog(msg);
+        setOpenDialog(true);
+    }
+
+    const closeModal = (act) => {
+        setOpenDialog(false);
+        setAction('');
+        setQuestionDialog('');
+        if (act === "Ok") {
+            handleSubmit();
+        }
     }
 
     // Atualiza os campos do formulário apenas quando selectedIndex, property, forms ou formIndex mudam
@@ -148,9 +178,9 @@ const SmartStageForm = ({
                         <button
                             type="button"
                             className="btn btn-success"
-                            onClick={handleSubmit}
+                            onClick={openDialogBox}
                             disabled={forms.some(f =>
-                               !f.tipo || !f.retirar
+                                !f.tipo || !f.retirar
                             )}
                         >
                             Enviar pedido
@@ -158,6 +188,15 @@ const SmartStageForm = ({
                     )}
                 </div>
             </form>
+            {openDialog &&
+                <div>
+                    <DialogBox
+                        actionScript={closeModal}
+                        action={action}
+                        questionDialog={questionDialog}
+                        isopen={openDialog}
+                    />
+                </div>}
         </div>
     );
 };

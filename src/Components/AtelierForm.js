@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styles from './ImageSelector.module.css';
 
 const AtelierForm = ({
@@ -8,8 +8,42 @@ const AtelierForm = ({
     handleFormChange,
     handlePrev,
     handleNext,
-    handleSubmit
+    handleSubmit,
+    selectedIndexes,
+    property
 }) => {
+    // Recupera o índice da imagem selecionada
+    const selectedIndex = selectedIndexes[formIndex];
+
+    // Recupera o código interno do imóvel (property.fields.Codigo pode ser string ou array)
+    let codigoInterno = '';
+    if (property && property.fields && property.fields.Codigo) {
+        if (Array.isArray(property.fields.Codigo)) {
+            codigoInterno = property.fields.Codigo[selectedIndex] || property.fields.Codigo[0] || '';
+        } else {
+            codigoInterno = property.fields.Codigo;
+        }
+    }
+
+    // Recupera o link da página do imóvel (property.fields['Fotos_URLs'] deve ser array)
+    let linkPaginaImovel = '';
+    if (property && property.fields && property.fields['Fotos_URLs']) {
+        const fotosUrls = Array.isArray(property.fields['Fotos_URLs'])
+            ? property.fields['Fotos_URLs']
+            : property.fields['Fotos_URLs'].split('\n').filter(Boolean);
+        linkPaginaImovel = fotosUrls[selectedIndex] || '';
+    }
+
+    // Atualiza os campos do formulário apenas quando selectedIndex, property, forms ou formIndex mudam
+    useEffect(() => {
+        if (codigoInterno) {
+            handleFormChange('codigo', codigoInterno);
+        }
+        if (linkPaginaImovel) {
+            handleFormChange('propertyUrl', linkPaginaImovel);
+        }
+        // eslint-disable-next-line
+    }, [codigoInterno, linkPaginaImovel, formIndex]);
     const ESTILOS = [
         'Clássico Atualizado',
         'Elegância Descontraída',
@@ -20,17 +54,34 @@ const AtelierForm = ({
     const TIPOS = [
         'Sala de estar + jantar',
         'Sala de estar',
-        'Sala de jantar',
         'Quarto',
+        'Sala de jantar',
         'Sala de jantar + cozinha',
+        'Sala de estar + cozinha',
         'Cozinha',
-        'Varanda',
-        'Lavanderia',
+        'Quarto infantil',
+        'Home office',
+        'Studio',
         'Banheiro',
-        'Escritório'
+        'Varanda',
+        'Área externa',
+        'Walk in closet',
+        'Lavanderia',
+        'Escritório',
+        'Outro',
     ];
-    const ACABAMENTOS = ['SIM', 'NÃO'];
-    const RETIRAR = ['SIM', 'NÃO'];
+    const ACABAMENTOS = ['Sim', 'Não'];
+    const RETIRAR = ['Sim', 'Não'];
+    const MODELO_VIDEO = [
+        'Sem vídeo',
+        'A - Antes e depois',
+        'B - Câmera mágica',
+        'C - Câmera mágica + Antes e depois',
+    ];
+    const FORMATOS_VIDEO = [
+        'Horizontal (Web - Portal de Vendas, Youtube)',
+        'Vertical (Social - Stories, Reels e WhatsApp)'
+    ]
 
     return (
         <div className={styles.selectorWrapper}>
@@ -42,7 +93,7 @@ const AtelierForm = ({
             </div>
             <form className={styles.formArea} onSubmit={e => e.preventDefault()}>
                 <div className="mb-3">
-                    <label className="form-label">Estilo de ambientação</label>
+                    <label className="form-label" style={{ display: 'block', textAlign: 'left' }}>Estilo de ambientação</label>
                     <select
                         className="form-select"
                         value={currentForm.estilo}
@@ -57,7 +108,7 @@ const AtelierForm = ({
                     </select>
                 </div>
                 <div className="mb-3">
-                    <label className="form-label">Tipo de ambiente</label>
+                    <label className="form-label" style={{ display: 'block', textAlign: 'left' }}>Tipo de ambiente</label>
                     <select
                         className="form-select"
                         value={currentForm.tipo}
@@ -72,7 +123,7 @@ const AtelierForm = ({
                     </select>
                 </div>
                 <div className="mb-3">
-                    <label className="form-label">RUUM Project - Colocar/alterar acabeneto (Pode acarretar custo adicional. Consulte seu plano).*</label>
+                    <label className="form-label" style={{ display: 'block', textAlign: 'left' }}>RUUM Project - Colocar/alterar acabeneto (Pode acarretar custo adicional. Consulte seu plano).*</label>
                     <select
                         className="form-select"
                         value={currentForm.acabamento}
@@ -87,7 +138,7 @@ const AtelierForm = ({
                     </select>
                 </div>
                 <div className="mb-3">
-                    <label className="form-label">RUUM ReStyle - Retirar mobiliário/decoração existente (Pode acarretar custo adicional. Consulte seu plano).*</label>
+                    <label className="form-label" style={{ display: 'block', textAlign: 'left' }}>RUUM ReStyle - Retirar mobiliário/decoração existente (Pode acarretar custo adicional. Consulte seu plano).*</label>
                     <select
                         className="form-select"
                         value={currentForm.retirar}
@@ -102,7 +153,7 @@ const AtelierForm = ({
                     </select>
                 </div>
                 <div className="mb-3">
-                    <label className="form-label">Requisições de clientes</label>
+                    <label className="form-label" style={{ display: 'block', textAlign: 'left' }}>Requisições de clientes</label>
                     <textarea
                         className="form-control"
                         value={currentForm.observacoes}
@@ -112,7 +163,7 @@ const AtelierForm = ({
                     />
                 </div>
                 <div className="mb-3">
-                    <label className="form-label">Imagens de referência</label>
+                    <label className="form-label" style={{ display: 'block', textAlign: 'left' }}>Imagens de referência</label>
                     <input
                         type="text"
                         className="form-control"
@@ -122,24 +173,32 @@ const AtelierForm = ({
                     />
                 </div>
                 <div className="mb-3">
-                    <label className="form-label">Modelo de vídeo</label>
-                    <input
-                        type="text"
-                        className="form-control"
+                    <label className="form-label" style={{ display: 'block', textAlign: 'left' }}>Modelo de vídeo</label>
+                    <select
+                        className="form-select"
                         value={currentForm.modeloVideo || ''}
                         onChange={e => handleFormChange('modeloVideo', e.target.value)}
-                        placeholder="Descreva ou cole o link do modelo de vídeo desejado"
-                    />
+                        required
+                    >
+                        <option value="">Selecione...</option>
+                        {MODELO_VIDEO.map((modelo) => (
+                            <option key={modelo} value={modelo}>{modelo}</option>
+                        ))}
+                    </select>
                 </div>
                 <div className="mb-3">
-                    <label className="form-label">Formato/proporção do vídeo</label>
-                    <input
-                        type="text"
-                        className="form-control"
+                    <label className="form-label" style={{ display: 'block', textAlign: 'left' }}>Formato/proporção do vídeo</label>
+                    <select
+                        className="form-select"
                         value={currentForm.formatoVideo || ''}
                         onChange={e => handleFormChange('formatoVideo', e.target.value)}
-                        placeholder="Ex: 16:9, 1:1, vertical, etc."
-                    />
+                        required
+                    >
+                        <option value="">Selecione...</option>
+                        {FORMATOS_VIDEO.map((formato) => (
+                            <option key={formato} value={formato}>{formato}</option>
+                        ))}
+                    </select>
                 </div>
                 {/* Campo: Código interno no imóvel */}
                 <div className="mb-3">

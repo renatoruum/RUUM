@@ -15,6 +15,10 @@ const Home = () => {
     navigate('/suggestionfeed');
   }
 
+  useEffect(() => {
+    goFeed()
+  }, []);
+
   return (
     <div>
       <h1>Welcome to Ruum</h1>

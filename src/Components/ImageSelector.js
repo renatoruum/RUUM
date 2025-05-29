@@ -1,6 +1,12 @@
+//React
 import { useState, useEffect } from 'react';
-import styles from './ImageSelector.module.css';
+import { useClientPlan } from '../Contexts/ClientPlanProvider';
+//Components
 import SmartStageForm from './SmartStageForm';
+import AtelierForm from './AtelierForm';
+import DialogBox from './DialogBox';
+// Styles
+import styles from './ImageSelector.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
@@ -12,6 +18,12 @@ const ImageSelector = ({ property, closeImageSelector }) => {
   const [formIndex, setFormIndex] = useState(0);
   const [forms, setForms] = useState([]);
   const [zoomImg, setZoomImg] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [action, setAction] = useState('processing');
+  const [questionDialog, setQuestionDialog] = useState('Salvando imagens...');
+
+  const { clientPlan } = useClientPlan();
 
   useEffect(() => {
     if (property && property.fields && property.fields.Fotos_URLs) {
@@ -65,26 +77,81 @@ const ImageSelector = ({ property, closeImageSelector }) => {
   };
 
   const handleSubmit = () => {
-    console.log("forms ", forms);
-    fetch("https://9304-177-92-71-250.ngrok-free.app/api/update-images-airtable", {
+    //setSaving(true);
+    setOpenDialog(true);
+    setAction('processing');
+    setQuestionDialog('Salvando imagens...');
+    fetch("https://19cc-177-92-71-250.ngrok-free.app/api/update-images-airtable", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(forms)
     })
       .then(res => res.json())
       .then(data => {
+        setSaving(false);
+        setOpenDialog(false);
         if (data) {
-          alert('Formulários enviados com sucesso!');
           closeImageSelector();
         } else {
           alert('Erro ao enviar formulários. Tente novamente.');
         }
       })
       .catch(err => {
+        setSaving(false);
+        setOpenDialog(false);
         console.error(err);
         alert('Erro ao enviar formulários. Tente novamente.');
       });
   };
+
+  const closeModal = (act) => {
+    setOpenDialog(false);
+    setSaving(true);
+    setAction('');
+    setQuestionDialog('');
+    if (act === "Ok") {
+      handleSubmit();
+    }
+  }
+
+  if (saving) {
+    return (
+      <div
+        className={styles.selectorWrapper}
+        style={{
+          minHeight: 300,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'transparent',
+          boxShadow: 'none',
+        }}
+      >
+        <div style={{
+          border: '6px solid #e6eaf0',
+          borderTop: '6px solid #68bf6c',
+          borderRadius: '50%',
+          width: '56px',
+          height: '56px',
+          animation: 'spin 1s linear infinite',
+          margin: '2rem auto',
+          background: 'transparent'
+        }} />
+        <div style={{ marginTop: '.5rem', textAlign: 'center', color: '#68bf6c', fontWeight: 'bold' }}>
+          Salvando imagens
+        </div>
+        <style>
+          {`
+          @keyframes spin {
+            0% { transform: rotate(0deg);}
+            100% { transform: rotate(360deg);}
+          }
+        `}
+        </style>
+      </div>
+    );
+  }
 
   if (step === 'select') {
 
@@ -184,17 +251,38 @@ const ImageSelector = ({ property, closeImageSelector }) => {
         aria-label="Close"
         onClick={closeImageSelector}
       ></button>
-      <SmartStageForm
-        currentForm={currentForm}
-        formIndex={formIndex}
-        forms={forms}
-        handleFormChange={handleFormChange}
-        handlePrev={handlePrev}
-        handleNext={handleNext}
-        handleSubmit={handleSubmit}
-        selectedIndexes={forms.map(f => f.originalIndex)}
-        property={property}
-      />
+      {clientPlan === "Imob"
+        ? <SmartStageForm
+          currentForm={currentForm}
+          formIndex={formIndex}
+          forms={forms}
+          handleFormChange={handleFormChange}
+          handlePrev={handlePrev}
+          handleNext={handleNext}
+          handleSubmit={handleSubmit}
+          selectedIndexes={forms.map(f => f.originalIndex)}
+          property={property}
+        />
+        : <AtelierForm
+          currentForm={currentForm}
+          formIndex={formIndex}
+          forms={forms}
+          handleFormChange={handleFormChange}
+          handlePrev={handlePrev}
+          handleNext={handleNext}
+          handleSubmit={handleSubmit}
+          selectedIndexes={forms.map(f => f.originalIndex)}
+          property={property}
+        />
+      }
+      {openDialog &&
+        <div>
+          <DialogBox
+            action={action}
+            questionDialog={questionDialog}
+            isopen={openDialog}
+          />
+        </div>}
     </div>
   );
 };

@@ -11,3 +11,11 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+h1, h2, h3 {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+p, h4, h5, h6, span, label, button, strong, ::placeholder {
+ font-family: 'Realway', sans-serif; 
+}

@@ -311,7 +311,7 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
                       className={`${styles.propertyDesc} ${isClamped ? styles.clamped : ''}`}
                       style={{ position: 'relative' }}
                     >
-                      {desc}
+                      <h6>{desc}</h6>
                       {shouldClamp(desc) && (
                         <button
                           type="button"
