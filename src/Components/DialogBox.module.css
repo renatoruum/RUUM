@@ -1,4 +1,4 @@
-  .btn_style {
+.btn_style {
     background-color: #68bf6c;
     border: 1px solid #68bf6c;
     border-radius: 6px;
@@ -6,6 +6,7 @@
     font-weight: bold;
     width: 17em;
     height: 2.5em;
+    margin-top: 2em;
   }
 
   .btn_cancel {
@@ -17,6 +18,7 @@
     width: 11em;
     height: 2.5em;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    margin-top: 2em;
   }
 
   .loader {
@@ -32,4 +34,13 @@
 @keyframes spin {
   0% { transform: rotate(0deg);}
   100% { transform: rotate(360deg);}
+}
+
+.dialogBoxOverlay {
+  z-index: 9999 !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
 }

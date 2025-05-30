@@ -20,7 +20,7 @@
   font-size: 1.2rem;
   font-weight: 700;
   color: #1a2233;
-  margin-bottom: 1.2rem;
+  margin-bottom: 3rem;
   text-align: center;
 }
 
@@ -54,14 +54,14 @@
 
 .selected {
   border: 2.5px solid #007bff;
-  box-shadow: 0 4px 16px rgba(0,123,255,0.10);
+  box-shadow: 0 4px 16px rgba(0, 123, 255, 0.10);
 }
 
 .checkOverlay {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: rgba(0,123,255,0.85);
+  background: rgba(0, 123, 255, 0.85);
   color: #fff;
   border-radius: 50%;
   padding: 0.3em 0.4em;
@@ -108,17 +108,25 @@
   z-index: 1000;
   animation: fadeIn 0.2s;
 }
+
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
+
 .zoomImg {
   max-width: 90vw;
   max-height: 80vh;
   border-radius: 12px;
-  box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.25);
   background: #fff;
 }
+
 .closeZoom {
   position: absolute;
   top: 2rem;
@@ -145,16 +153,165 @@
   outline: none;
   transition: transform 0.15s;
 }
+
 .checkBtn:active {
   transform: scale(0.95);
 }
+
 .imageBox {
   position: relative;
-  /* ...existing code... */
 }
+
 .selected {
   border: 2.5px solid #68bf6c;
-  box-shadow: 0 4px 16px rgba(104,191,108,0.10);
+  box-shadow: 0 4px 16px rgba(104, 191, 108, 0.10);
+}
+
+.modalContentGrid {
+  display: flex;
+  height: 100%;
+  min-height: 480px;
+  width: 100%;
+  align-items: center;
+  position: relative;
+  gap: 0;
+}
+
+.leftCol,
+.rightCol {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
+  padding: 5% 2% 5% 5%;
+}
+
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+  min-height: 400px;
+  padding: 5% 5% 5% 2%;
+}
+
+.divider {
+  grid-row: 1 / span 1;
+  grid-column: 2 / span 1;
+  justify-self: center;
+  align-self: center;
+  width: 2px;
+  height: 80%;
+  background: linear-gradient(to bottom, #e6eaf0 10%, #cfd8dc 90%);
+  border-radius: 2px;
+  opacity: 0.5;
+  margin: 0 0.5rem;
+}
+
+.imageColContent {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.formImageBoxGrid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 320px;
+  width: 100%;
+}
+
+.formImageGrid {
+  width: 100%;
+
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+}
+
+.formTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a2233;
+  margin-bottom: 0.7rem;
+  text-align: left;
+}
+
+.formSubtitle {
+  font-size: 1rem;
+  color: #34495e;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.formAreaGrid {
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.formNavGrid {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+.formSelect {
+  background-color: #eff1f9;
+  border: none;
+  padding: .5em;
+}
+
+.submitButton {
+  background-color: #69c66c;
+  color: black;
+  font-weight: bold;
+  border: none;
+}
+
+.submitButton:hover {
+  background-color: #5ab05a;
+  color: black;
+  font-weight: bold;
+}
+
+
+/* Responsivo */
+@media (max-width: 900px) {
+  .modalContentGrid {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    height: auto;
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .leftCol,
+  .rightCol {
+    padding: 2rem 1rem;
+    min-height: unset;
+  }
+
+  .formImageBoxGrid {
+    height: 200px;
+  }
+
+  .formImageGrid {
+    height: 140px;
+    max-width: 100%;
+  }
 }
 
 @media (min-width: 600px) {
@@ -162,12 +319,15 @@
     padding: 2rem 2rem 2.5rem 2rem;
     max-width: 600px;
   }
+
   .imagesGrid {
     grid-template-columns: 1fr 1fr 1fr;
   }
+
   .image {
     height: 140px;
   }
+
   .formImage {
     height: 200px;
     max-width: 400px;
@@ -179,12 +339,15 @@
     max-width: 700px;
     padding: 2.5rem 3rem 3rem 3rem;
   }
+
   .imagesGrid {
     grid-template-columns: 1fr 1fr 1fr 1fr;
   }
+
   .image {
     height: 160px;
   }
+
   .formImage {
     height: 240px;
     max-width: 520px;

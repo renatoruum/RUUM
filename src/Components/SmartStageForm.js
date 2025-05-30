@@ -1,6 +1,7 @@
-//Reaclt
-import React, { useEffect, useState } from 'react';
+//Reeact
+import { useEffect, useState } from 'react';
 //Components
+import MsgModal from './MsgModal';
 import DialogBox from './DialogBox';
 //Styles
 import styles from './ImageSelector.module.css';
@@ -16,17 +17,38 @@ const SmartStageForm = ({
     selectedIndexes,
     property
 }) => {
-    const [openDialog, setOpenDialog] = useState(false);
+    const [openDialogBox, setOpenDialogBox] = useState(false);
     const [action, setAction] = useState('');
     const [questionDialog, setQuestionDialog] = useState('');
+    const [isopen, setIsOpen] = useState(false);
 
     const imgQty = forms.length;
     const credits = imgQty * 100;
-
-    // Recupera o índice da imagem selecionada
     const selectedIndex = selectedIndexes[formIndex];
 
-    // Recupera o código interno do imóvel (property.fields.Codigo pode ser string ou array)
+    const actionScript = (act) => {
+        setOpenDialogBox(false);
+        setIsOpen(false);
+        setAction("");
+        setQuestionDialog("");
+        console.log("Action script called with action:", act);
+        if (act === "Cancelar") {
+            return;
+        } else if (act === "Ok") {
+            handleSubmit()
+        }
+    }
+
+    const handleOpenDialogBox = () => {
+        const msg = imgQty > 1
+            ? `O processamento destas ${imgQty} imagens vai consumir ${credits} créditos do seu plano. Deseja continuar?`
+            : `O processamento desta imagem vai consumir ${credits} créditos do seu plano. Deseja continuar?`;
+        setQuestionDialog(msg);
+        setIsOpen(true);
+        setOpenDialogBox(true);
+        setAction("confirm");
+    }
+
     let codigoInterno = '';
     if (property && property.fields && property.fields.Codigo) {
         if (Array.isArray(property.fields.Codigo)) {
@@ -36,7 +58,6 @@ const SmartStageForm = ({
         }
     }
 
-    // Recupera o link da página do imóvel (property.fields['Fotos_URLs'] deve ser array)
     let linkPaginaImovel = '';
     if (property && property.fields && property.fields['Fotos_URLs']) {
         const fotosUrls = Array.isArray(property.fields['Fotos_URLs'])
@@ -45,26 +66,6 @@ const SmartStageForm = ({
         linkPaginaImovel = fotosUrls[selectedIndex] || '';
     }
 
-    const openDialogBox = () => {
-        setAction('action');
-        const msg = 
-            imgQty === 1
-                ? 'O processamento desta imagem consumirá 100 créditos. Você tem certeza que deseja enviar este pedido?'
-                : `O processamento destas ${imgQty} imagens consumirá ${credits} créditos. Você tem certeza que deseja enviar este pedido?`
-        setQuestionDialog(msg);
-        setOpenDialog(true);
-    }
-
-    const closeModal = (act) => {
-        setOpenDialog(false);
-        setAction('');
-        setQuestionDialog('');
-        if (act === "Ok") {
-            handleSubmit();
-        }
-    }
-
-    // Atualiza os campos do formulário apenas quando selectedIndex, property, forms ou formIndex mudam
     useEffect(() => {
         if (codigoInterno) {
             handleFormChange('codigo', codigoInterno);
@@ -85,118 +86,129 @@ const SmartStageForm = ({
 
     const RETIRAR = ['Sim', 'Não'];
 
+    const handleEnviarClick = () => {
+        handleSubmit(); // chamada direta
+    };
+
     return (
-        <div className={styles.selectorWrapper}>
-            <h2>Smart Stage | Enviar nova imagem</h2>
-            <h6>Preencha o formulário para enviar nova imagem para processamento. Marcas d'água na imagem enviada pode resultar em alucinações pela RUUM AI. Quanto melhor a qualidade da imagem enviada, melhor o resultado final ;)</h6>
-            <h4 className={`mt-5 ${styles.title}`}>Imagem {formIndex + 1} de {forms.length}</h4>
-            <div className={styles.formImageBox}>
-                <img src={currentForm.imgUrl} alt={`Selecionada ${formIndex + 1}`} className={styles.formImage} />
+        <div className={styles.modalContentGrid}>
+            <div className={styles.leftCol}>
+                <h4 className={styles.title}>Imagem {formIndex + 1} de {forms.length}</h4>
+                <div className={styles.formImageBoxGrid}>
+                    <img src={currentForm.imgUrl} alt={`Selecionada ${formIndex + 1}`} className={styles.formImageGrid} />
+                </div>
             </div>
-            <form className={styles.formArea} onSubmit={e => e.preventDefault()}>
-
-                <div className="mb-3">
-                    <label className="form-label text-start" style={{ display: 'block', textAlign: 'left' }}>Tipo de ambiente</label>
-                    <select
-                        className="form-select"
-                        value={currentForm.tipo}
-                        onChange={e => handleFormChange('tipo', e.target.value)}
-                        required
-                    >
-                        <option value="">Selecione...</option>
-                        {TIPOS.map((tipo) => (
-                            <option key={tipo} value={tipo}>{tipo}</option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="mb-3">
-                    <label className="form-label text-start" style={{ display: 'block', textAlign: 'left' }}>
-                        Retirar mobiliário/decoração existentes (Pode acarretar custo adicional, consulte o seu plano.)?
-                    </label>
-                    <select
-                        className="form-select"
-                        value={currentForm.retirar}
-                        onChange={e => handleFormChange('retirar', e.target.value)}
-                        required
-                    >
-                        <option value="">Selecione...</option>
-                        {RETIRAR.map((ret) => (
-                            <option key={ret} value={ret}>{ret}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Campo: Código interno no imóvel */}
-                <div className="mb-3">
-                    <label className="form-label text-start" style={{ display: 'block', textAlign: 'left' }}>
-                        Código interno no imóvel na sua imobiliária
-                    </label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        value={codigoInterno}
-                        readOnly
-                    />
-                </div>
-
-                {/* Campo: Link da página do imóvel */}
-                <div className="mb-3">
-                    <label className="form-label text-start" style={{ display: 'block', textAlign: 'left' }}>
-                        Link da página do imóvel
-                    </label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        value={linkPaginaImovel}
-                        readOnly
-                    />
-                </div>
-
-                <div className={styles.formNav}>
-                    <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={handlePrev}
-                        disabled={formIndex === 0}
-                    >
-                        Anterior
-                    </button>
-                    {formIndex < forms.length - 1 ? (
+            <div className={styles.divider} />
+            <div className={styles.rightCol}>
+                <h2 className={styles.formTitle}>Smart Stage | Enviar nova imagem</h2>
+                <h6 className={styles.formSubtitle}>
+                    Preencha o formulário para enviar nova imagem para processamento. Marcas d'água na imagem enviada pode resultar em alucinações pela RUUM AI. Quanto melhor a qualidade da imagem enviada, melhor o resultado final ;)
+                </h6>
+                <form className={styles.formAreaGrid} onSubmit={e => e.preventDefault()}>
+                    <div className="mb-3">
+                        <label className="form-label d-flex text-start fw-bold">
+                            Tipo de ambiente
+                        </label>
+                        <select
+                            className={`form-select ${styles.formSelect}`}
+                            value={currentForm.tipo}
+                            onChange={e => handleFormChange('tipo', e.target.value)}
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                            {TIPOS.map((tipo) => (
+                                <option key={tipo} value={tipo}>{tipo}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label d-flex text-start fw-bold">
+                            Retirar mobiliário/decoração existentes (Pode acarretar custo adicional, consulte o seu plano.)?
+                        </label>
+                        <select
+                            className={`form-select ${styles.formSelect}`}
+                            value={currentForm.retirar}
+                            onChange={e => handleFormChange('retirar', e.target.value)}
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                            {RETIRAR.map((ret) => (
+                                <option key={ret} value={ret}>{ret}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label d-flex text-start fw-bold">
+                            Código interno no imóvel na sua imobiliária
+                        </label>
+                        <input
+                            type="text"
+                            className={`form-control ${styles.formSelect}`}
+                            value={codigoInterno}
+                            readOnly
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label d-flex text-start fw-bold">
+                            Link da página do imóvel
+                        </label>
+                        <input
+                            type="text"
+                            className={`form-control ${styles.formSelect}`}
+                            value={linkPaginaImovel}
+                            readOnly
+                        />
+                    </div>
+                    <div className={styles.formNavGrid}>
                         <button
                             type="button"
-                            className="btn btn-primary"
-                            onClick={handleNext}
-                            disabled={
-                                !currentForm.tipo ||
-                                !currentForm.retirar
-                            }
+                            className="btn btn-outline-secondary"
+                            onClick={handlePrev}
+                            disabled={formIndex === 0}
                         >
-                            Próxima
+                            Anterior
                         </button>
-                    ) : (
-                        <button
-                            type="button"
-                            className="btn btn-success"
-                            onClick={openDialogBox}
-                            disabled={forms.some(f =>
-                                !f.tipo || !f.retirar
-                            )}
-                        >
-                            Enviar pedido
-                        </button>
-                    )}
-                </div>
-            </form>
-            {openDialog &&
-                <div>
+                        {formIndex < forms.length - 1 ? (
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={handleNext}
+                                disabled={
+                                    !currentForm.tipo ||
+                                    !currentForm.retirar
+                                }
+                            >
+                                Próxima
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                className={`btn btn-success ${styles.submitButton}`}
+                                onClick={handleOpenDialogBox}
+                                disabled={forms.some(f =>
+                                    !f.tipo || !f.retirar
+                                )}
+                            >
+
+                                Enviar
+                            </button>
+                        )}
+                    </div>
+                </form>
+            </div>
+            {actionScript && questionDialog &&
+                <MsgModal
+                    show={openDialogBox}
+                    onClose={actionScript}>
                     <DialogBox
-                        actionScript={closeModal}
                         action={action}
+                        actionScript={actionScript}
                         questionDialog={questionDialog}
-                        isopen={openDialog}
+
                     />
-                </div>}
+                </ MsgModal>
+            }
+
         </div>
     );
 };

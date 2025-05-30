@@ -1,17 +1,13 @@
-//React
 import { useState, useEffect } from 'react';
 import { useClientPlan } from '../Contexts/ClientPlanProvider';
-//Components
+import CustomModal from './CustomModal';
 import SmartStageForm from './SmartStageForm';
 import AtelierForm from './AtelierForm';
-import DialogBox from './DialogBox';
-// Styles
-import styles from './ImageSelector.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import styles from './ImageSelector.module.css';
 
 const ImageSelector = ({ property, closeImageSelector }) => {
-
   const [images, setImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [step, setStep] = useState('select');
@@ -19,11 +15,16 @@ const ImageSelector = ({ property, closeImageSelector }) => {
   const [forms, setForms] = useState([]);
   const [zoomImg, setZoomImg] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [action, setAction] = useState('processing');
-  const [questionDialog, setQuestionDialog] = useState('Salvando imagens...');
+  const [showFormModal, setShowFormModal] = useState(false);
 
   const { clientPlan } = useClientPlan();
+
+  const closeFormModal = () => setShowFormModal(false);
+
+  const backToSelector = () => {
+    setStep('select');
+    setShowFormModal(false);
+  };
 
   useEffect(() => {
     if (property && property.fields && property.fields.Fotos_URLs) {
@@ -58,6 +59,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
     );
     setStep('form');
     setFormIndex(0);
+    setShowFormModal(true);
   };
 
   const handleFormChange = (field, value) => {
@@ -77,11 +79,8 @@ const ImageSelector = ({ property, closeImageSelector }) => {
   };
 
   const handleSubmit = () => {
-    //setSaving(true);
-    setOpenDialog(true);
-    setAction('processing');
-    setQuestionDialog('Salvando imagens...');
-    fetch("https://19cc-177-92-71-250.ngrok-free.app/api/update-images-airtable", {
+    setSaving(true);
+    fetch("https://3583-189-102-4-201.ngrok-free.app/api/update-images-airtable", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(forms)
@@ -89,7 +88,6 @@ const ImageSelector = ({ property, closeImageSelector }) => {
       .then(res => res.json())
       .then(data => {
         setSaving(false);
-        setOpenDialog(false);
         if (data) {
           closeImageSelector();
         } else {
@@ -98,21 +96,10 @@ const ImageSelector = ({ property, closeImageSelector }) => {
       })
       .catch(err => {
         setSaving(false);
-        setOpenDialog(false);
         console.error(err);
         alert('Erro ao enviar formulários. Tente novamente.');
       });
   };
-
-  const closeModal = (act) => {
-    setOpenDialog(false);
-    setSaving(true);
-    setAction('');
-    setQuestionDialog('');
-    if (act === "Ok") {
-      handleSubmit();
-    }
-  }
 
   if (saving) {
     return (
@@ -154,9 +141,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
   }
 
   if (step === 'select') {
-
     return (
-
       <div className={styles.selectorWrapper}>
         <button
           type="button"
@@ -165,7 +150,6 @@ const ImageSelector = ({ property, closeImageSelector }) => {
           onClick={closeImageSelector}
         ></button>
         <h4 className={styles.title}>Selecione as imagens para Virtual Staging</h4>
-
         <div className={styles.imagesGrid}>
           {images.map((imgUrl, idx) => {
             const selected = selectedImages.includes(imgUrl);
@@ -212,7 +196,6 @@ const ImageSelector = ({ property, closeImageSelector }) => {
             );
           })}
         </div>
-
         {/* Modal de zoom */}
         {zoomImg && (
           <div className={styles.zoomModal} onClick={() => setZoomImg(null)}>
@@ -244,46 +227,32 @@ const ImageSelector = ({ property, closeImageSelector }) => {
   const currentForm = forms[formIndex];
 
   return (
-    <div className={styles.selectorWrapper}>
-      <button
-        type="button"
-        className={`btn-close ${styles.closeBtn}`}
-        aria-label="Close"
-        onClick={closeImageSelector}
-      ></button>
+    <CustomModal show={showFormModal} onClose={backToSelector}>
       {clientPlan === "Imob"
         ? <SmartStageForm
-          currentForm={currentForm}
-          formIndex={formIndex}
-          forms={forms}
-          handleFormChange={handleFormChange}
-          handlePrev={handlePrev}
-          handleNext={handleNext}
-          handleSubmit={handleSubmit}
-          selectedIndexes={forms.map(f => f.originalIndex)}
-          property={property}
-        />
-        : <AtelierForm
-          currentForm={currentForm}
-          formIndex={formIndex}
-          forms={forms}
-          handleFormChange={handleFormChange}
-          handlePrev={handlePrev}
-          handleNext={handleNext}
-          handleSubmit={handleSubmit}
-          selectedIndexes={forms.map(f => f.originalIndex)}
-          property={property}
-        />
-      }
-      {openDialog &&
-        <div>
-          <DialogBox
-            action={action}
-            questionDialog={questionDialog}
-            isopen={openDialog}
+            currentForm={currentForm}
+            formIndex={formIndex}
+            forms={forms}
+            handleFormChange={handleFormChange}
+            handlePrev={handlePrev}
+            handleNext={handleNext}
+            selectedIndexes={forms.map(f => f.originalIndex)}
+            property={property}
+            handleSubmit={handleSubmit}
           />
-        </div>}
-    </div>
+        : <AtelierForm
+            currentForm={currentForm}
+            formIndex={formIndex}
+            forms={forms}
+            handleFormChange={handleFormChange}
+            handlePrev={handlePrev}
+            handleNext={handleNext}
+            handleSubmit={handleSubmit}
+            selectedIndexes={forms.map(f => f.originalIndex)}
+            property={property}
+          />
+      }
+    </CustomModal>
   );
 };
 
