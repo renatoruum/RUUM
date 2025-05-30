@@ -204,9 +204,20 @@ const ImageSelector = ({ property, closeImageSelector }) => {
             </div>
           )}
           <button
-            className="btn btn-primary mt-3 w-100"
-            disabled={selectedImages.length === 0}
+            type="button"
+            className="btn mt-5"
+            style={{
+                backgroundColor: '#68bf6c',
+                color: '#fff',
+                border: 'none',
+                fontWeight: 600,
+                fontSize: '1.1em',
+                padding: '0.7em 2.2em',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(104,191,108,0.10)'
+            }}
             onClick={handleConfirmSelection}
+            disabled={selectedImages.length === 0}
           >
             Confirmar seleção ({selectedImages.length})
           </button>
@@ -281,7 +292,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
 
       {step !== 'select' && (
         <CustomModal show={showFormModal} onClose={backToSelector}>
-          {clientPlan === "Imob"
+          {clientPlan === "Atelier"
             ? <SmartStageForm
                 currentForm={currentForm}
                 formIndex={formIndex}

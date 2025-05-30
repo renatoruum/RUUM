@@ -102,7 +102,7 @@ const SmartStageForm = ({
             <div className={styles.rightCol}>
                 <h2 className={styles.formTitle}>Smart Stage | Enviar nova imagem</h2>
                 <h6 className={styles.formSubtitle}>
-                    Preencha o formulário para enviar nova imagem para processamento. Marcas d'água na imagem enviada pode resultar em alucinações pela RUUM AI. Quanto melhor a qualidade da imagem enviada, melhor o resultado final ;)
+                    Preencha o formulário para enviar nova imagem para processamento. Quanto melhor a qualidade da imagem enviada, melhor o resultado final ;)
                 </h6>
                 <form className={styles.formAreaGrid} onSubmit={e => e.preventDefault()}>
                     <div className="mb-3">
@@ -159,10 +159,22 @@ const SmartStageForm = ({
                             readOnly
                         />
                     </div>
-                    <div className={styles.formNavGrid}>
+                    <div className={styles.formNavGrid} style={{ marginTop: '2.2rem', padding: '0 1.2rem 1.2rem 1.2rem' }}>
                         <button
                             type="button"
-                            className="btn btn-outline-secondary"
+                            className="btn"
+                            style={{
+                                backgroundColor: '#fff',
+                                color: '#222',
+                                border: '2px solid #222',
+                                fontWeight: 600,
+                                fontSize: '1.1em',
+                                padding: '0.6em 1.2em',
+                                borderRadius: '8px',
+                                boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
+                                opacity: formIndex === 0 ? 0.7 : 1,
+                                width: '100%'
+                            }}
                             onClick={handlePrev}
                             disabled={formIndex === 0}
                         >
@@ -171,25 +183,43 @@ const SmartStageForm = ({
                         {formIndex < forms.length - 1 ? (
                             <button
                                 type="button"
-                                className="btn btn-primary"
+                                className="btn"
+                                style={{
+                                    backgroundColor: '#68bf6c',
+                                    color: '#fff',
+                                    border: 'none',
+                                    fontWeight: 600,
+                                    fontSize: '1.1em',
+                                    padding: '0.6em 1.2em',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
+                                    opacity: (!currentForm.tipo || !currentForm.retirar) ? 0.7 : 1,
+                                    width: '100%'
+                                }}
                                 onClick={handleNext}
-                                disabled={
-                                    !currentForm.tipo ||
-                                    !currentForm.retirar
-                                }
+                                disabled={!currentForm.tipo || !currentForm.retirar}
                             >
                                 Próxima
                             </button>
                         ) : (
                             <button
                                 type="button"
-                                className={`btn btn-success ${styles.submitButton}`}
+                                className="btn"
+                                style={{
+                                    backgroundColor: '#68bf6c',
+                                    color: '#fff',
+                                    border: 'none',
+                                    fontWeight: 600,
+                                    fontSize: '1.1em',
+                                    padding: '0.6em 1.2em',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
+                                    opacity: forms.some(f => !f.tipo || !f.retirar) ? 0.7 : 1,
+                                    width: '100%'
+                                }}
                                 onClick={handleOpenDialogBox}
-                                disabled={forms.some(f =>
-                                    !f.tipo || !f.retirar
-                                )}
+                                disabled={forms.some(f => !f.tipo || !f.retirar)}
                             >
-
                                 Enviar
                             </button>
                         )}

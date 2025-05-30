@@ -289,7 +289,8 @@
 /* Responsivo */
 @media (max-width: 900px) {
   .modalContentGrid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    grid-template-columns: none !important;
     min-height: 0;
     height: auto;
   }
@@ -302,12 +303,24 @@
   .rightCol {
     padding: 2rem 1rem;
     min-height: unset;
+    width: 100%;
+    max-width: 100%;
   }
 
+  .leftCol {
+    order: 1;
+  }
+
+  .rightCol {
+    order: 2;
+  }
+
+  .formImageBox,
   .formImageBoxGrid {
     height: 200px;
   }
 
+  .formImage,
   .formImageGrid {
     height: 140px;
     max-width: 100%;
