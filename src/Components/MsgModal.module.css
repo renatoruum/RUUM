@@ -9,10 +9,10 @@
 }
 
 .modal {
-    width: 35vw;
-    max-width: 35vw;
-    min-width: 35vw;
-    height: 35vh;
+    width: 45vw;
+    max-width: 45vw;
+    min-width: 45vw;
+    height: 40vh;
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 8px 32px rgba(44, 62, 80, 0.18), 0 2px 8px rgba(44, 62, 80, 0.10);

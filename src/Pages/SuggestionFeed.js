@@ -65,7 +65,7 @@ const SuggestionFeed = () => {
     const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
 
     let allRecords = [];
-    base('A Casa 7').select({ view: "Grid view" }).eachPage(
+    base('ACasa7').select({ view: "Grid view" }).eachPage(
       function page(records, fetchNextPage) {
         allRecords = allRecords.concat(records);
         fetchNextPage();

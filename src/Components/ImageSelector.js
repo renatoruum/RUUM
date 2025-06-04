@@ -292,7 +292,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
 
       {step !== 'select' && (
         <CustomModal show={showFormModal} onClose={backToSelector}>
-          {clientPlan === "Atelier"
+          {clientPlan === "Imob"
             ? <SmartStageForm
                 currentForm={currentForm}
                 formIndex={formIndex}

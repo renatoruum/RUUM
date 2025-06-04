@@ -77,7 +77,7 @@ const SmartStageForm = ({
     }, [codigoInterno, linkPaginaImovel, formIndex]);
 
     const TIPOS = [
-        'Sala de estar + jantar',
+        'Sala de estar/jantar',
         'Quarto',
         'Quarto infantil',
         'Home office',
@@ -87,7 +87,7 @@ const SmartStageForm = ({
     const RETIRAR = ['Sim', 'Não'];
 
     const handleEnviarClick = () => {
-        handleSubmit(); // chamada direta
+        handleSubmit();
     };
 
     return (
