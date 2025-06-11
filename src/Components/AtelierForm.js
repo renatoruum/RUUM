@@ -112,14 +112,13 @@ const AtelierForm = ({
     return (
         <div style={{ background: '#fff', borderRadius: 18, width: '100%', height: '100%' }}>
             <div className={styles.modalContentGrid}>
-                <div className={styles.leftCol} style={{ position: 'sticky', top: 0, alignSelf: 'flex-start', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <h4 className={styles.title}>Imagem {formIndex + 1} de {forms.length}</h4>
+                <div className={styles.leftCol} style={{ display: 'none' }} />
+                <div className={styles.divider} />
+                <div className={styles.rightCol} style={{ maxHeight: '80vh', overflowY: 'auto' }}>
                     <div className={styles.formImageBox}>
                         <img src={currentForm.imgUrl} alt={`Selecionada ${formIndex + 1}`} className={styles.formImage} />
                     </div>
-                </div>
-                <div className={styles.divider} />
-                <div className={styles.rightCol} style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                    <h4 className={styles.title} style={{ marginTop: '1rem' }}>Imagem {formIndex + 1} de {forms.length}</h4>
                     <h2 className={styles.formTitle}>RUUM Atelier | Enviar nova imagem</h2>
                     <h6 className={styles.formSubtitle}>Suba imagens na melhor qualidade possível. É preferível sem marca d'água.</h6>
                     <form className={styles.formAreaGrid} onSubmit={e => e.preventDefault()}>

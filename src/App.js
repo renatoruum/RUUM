@@ -13,6 +13,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 //Pages
 import Home from './Pages/Home';
 import SuggestionFeed from './Pages/SuggestionFeed';
+import VideoTour from './Pages/VideoTour';
 
 function App() {
   return (
@@ -21,8 +22,10 @@ function App() {
         <div>
           <BrowserRouter>
             <Routes>
+              <Route path="*" element={<Navigate to="/" replace />} />
               <Route path="/" element={<Home />} />
               <Route path="/suggestionfeed" element={<SuggestionFeed />} />
+              <Route path="/videotour" element={<VideoTour />} />
             </Routes>
           </BrowserRouter>
         </div>

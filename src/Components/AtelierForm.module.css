@@ -60,8 +60,10 @@
 }
 
 .formImage {
+  max-height: 400px;
+  height: auto;
   width: 100%;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
 }

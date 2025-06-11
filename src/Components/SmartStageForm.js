@@ -93,10 +93,10 @@ const SmartStageForm = ({
     return (
         <div className={styles.modalContentGrid}>
             <div className={styles.leftCol}>
-                <h4 className={styles.title}>Imagem {formIndex + 1} de {forms.length}</h4>
                 <div className={styles.formImageBoxGrid}>
                     <img src={currentForm.imgUrl} alt={`Selecionada ${formIndex + 1}`} className={styles.formImageGrid} />
                 </div>
+                <h4 className={styles.title}>Imagem {formIndex + 1} de {forms.length}</h4>
             </div>
             <div className={styles.divider} />
             <div className={styles.rightCol}>
@@ -107,7 +107,7 @@ const SmartStageForm = ({
                 <form className={styles.formAreaGrid} onSubmit={e => e.preventDefault()}>
                     <div className="mb-3">
                         <label className="form-label d-flex text-start fw-bold">
-                            Tipo de ambiente
+                            Tipo de ambiente*
                         </label>
                         <select
                             className={`form-select ${styles.formSelect}`}
@@ -123,7 +123,7 @@ const SmartStageForm = ({
                     </div>
                     <div className="mb-3">
                         <label className="form-label d-flex text-start fw-bold">
-                            Retirar mobiliário/decoração existentes (Pode acarretar custo adicional, consulte o seu plano.)?
+                            Retirar mobiliário/decoração existentes (Pode acarretar custo adicional, consulte o seu plano)?*
                         </label>
                         <select
                             className={`form-select ${styles.formSelect}`}
@@ -158,6 +158,11 @@ const SmartStageForm = ({
                             value={linkPaginaImovel}
                             readOnly
                         />
+                    </div>
+                    <div>
+                        <h6 className='d-flex text-start'>
+                            * Campos obrigatórios
+                        </h6>
                     </div>
                     <div className={styles.formNavGrid} style={{ marginTop: '2.2rem', padding: '0 1.2rem 1.2rem 1.2rem' }}>
                         <button

@@ -82,7 +82,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
 
   const handleSubmit = () => {
     setSaving(true);
-    fetch("https://3583-189-102-4-201.ngrok-free.app/api/update-images-airtable", {
+    fetch("https://0d7a-191-205-248-153.ngrok-free.app/api/update-images-airtable", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(forms)
@@ -139,7 +139,6 @@ const ImageSelector = ({ property, closeImageSelector }) => {
             aria-label="Close"
             onClick={closeImageSelector}
           ></button>
-          <h4 className={styles.title}>Selecione as imagens para Virtual Staging</h4>
           <div className={styles.imagesGrid}>
             {images.map((imgUrl, idx) => {
               const selected = selectedImages.includes(imgUrl);
@@ -244,7 +243,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
               border: '2px solid #fff',
               zIndex: 10000
             }}>
-              Imagens salvas com sucesso!
+              Imagens enviadas para processamento!
             </div>
           </>
         </Overlay>

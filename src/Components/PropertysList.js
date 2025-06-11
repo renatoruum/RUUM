@@ -260,7 +260,7 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
                           <div
                             className={`carousel-item${i === 0 ? ' active' : ''}`}
                             key={imgUrl}
-                            style={{ position: 'relative', minHeight: '180px' }} // Garante espaço e contexto para o overlay
+                            style={{ position: 'relative', minHeight: '180px' }} 
                           >
                             {!imageLoaded[`${id}-${i}`] && (
                               <div
@@ -311,7 +311,7 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
                       className={`${styles.propertyDesc} ${isClamped ? styles.clamped : ''}`}
                       style={{ position: 'relative' }}
                     >
-                      <h6>{desc}</h6>
+                      <h6 className={`${styles.textDesc}`}>{desc}</h6>
                       {shouldClamp(desc) && (
                         <button
                           type="button"

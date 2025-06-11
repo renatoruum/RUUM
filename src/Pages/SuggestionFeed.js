@@ -1,37 +1,43 @@
-import { PAGE_SIZE } from '../constants';
-import { useState, useEffect } from 'react';
-import PropertysList from '../Components/PropertysList';
-import ImageSelector from '../Components/ImageSelector';
-import Airtable from 'airtable';
-import { useClientPlan } from '../Contexts/ClientPlanProvider';
+//STYLES
 import styles from './SuggestionFeed.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+//Hooks
+import { useState, useEffect } from 'react';
+import { useClientPlan } from '../Contexts/ClientPlanProvider';
+//Components
+import PropertysList from '../Components/PropertysList';
+import ImageSelector from '../Components/ImageSelector';
+//Airtable
+import Airtable from 'airtable';
+//Constants
+import { PAGE_SIZE } from '../constants';
 
 const SuggestionFeed = () => {
   const [records, setRecords] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [showPropertysList, setShowPropertysList] = useState(true);
   const [showImageSelector, setShowImageSelector] = useState(false);
-  const [topMessage, setTopMessage] = useState('Aqui estão as sugestões de imóveis que você pode considerar.');
+  const [topMessage, setTopMessage] = useState('Selecione abaixo o imóvel para Virtual Staging.');
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsToShow, setItemsToShow] = useState(PAGE_SIZE);
   const { clientPlan, setClientPlan } = useClientPlan();
+  const [clientName, setClientName] = useState("Acasa7 Inteligência Imobiliária");
 
   // Função para buscar o plano do cliente pelo nome
-  const getClientPlan = async (clientName) => {
+  const getClientPlan = async (clientname) => {
     Airtable.configure({
       apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
     });
     const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
 
-    console.log('Buscando plano do cliente:', clientName);
+    console.log('Buscando plano do cliente:', clientname);
 
     try {
       const records = await base('Clients')
         .select({
-          filterByFormula: `{Client Name} = "${clientName}"`,
+          filterByFormula: `{Client Name} = "${clientname}"`,
           maxRecords: 1,
         })
         .firstPage();
@@ -101,10 +107,14 @@ const SuggestionFeed = () => {
 
   };
 
+  useEffect(() => {
+    document.title = "Portal de Imóveis - " + clientName;
+  }, []);
+
   return (
     <div>
       <div className='mt-3'>
-        <h3 className={`${styles.title_font}`}>Feed de Oportunidades</h3>
+        <h3 className={`${styles.title_font}`}>{`Portal de Imóveis - ${clientName}`}</h3>
         <p className={`${styles.paragraph_font}`}>{topMessage}</p>
         <div>
           {showPropertysList && (
