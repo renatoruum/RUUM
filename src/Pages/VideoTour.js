@@ -100,7 +100,7 @@ const VideoTour = () => {
 
             // 2. Polling para status
             const poll = setInterval(async () => {
-                console.log("Render ID:", renderId);
+                console.log("URL chamada:", `${API_BASE}/shotstack-status/${renderId}`);
                 const statusRes = await fetch(`${API_BASE}/shotstack-status/${renderId}`);
                 const text = await statusRes.text();
                 console.log("Resposta bruta do backend:", text);
