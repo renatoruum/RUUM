@@ -7,6 +7,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import styles from './ImageSelector.module.css';
 import Confetti from 'react-confetti';
+import { apiCall } from '../Config/Config';
 
 const ImageSelector = ({ property, closeImageSelector }) => {
   const [images, setImages] = useState([]);
@@ -82,12 +83,10 @@ const ImageSelector = ({ property, closeImageSelector }) => {
 
   const handleSubmit = () => {
     setSaving(true);
-    fetch("https://0d7a-191-205-248-153.ngrok-free.app/api/update-images-airtable", {
+    apiCall("/update-images-airtable", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(forms)
     })
-      .then(res => res.json())
       .then(data => {
         setSaving(false);
         if (data) {

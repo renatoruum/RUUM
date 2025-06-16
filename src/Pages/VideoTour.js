@@ -4,6 +4,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 //Hooks
 import { useState } from 'react';
+//Config
+import { apiCall } from '../Config/Config';
 
 const initialJson = {
     timeline: {
@@ -47,8 +49,6 @@ const initialJson = {
     }
 };
 
-const API_BASE = "https://0d7a-191-205-248-153.ngrok-free.app/api";
-
 const VideoTour = () => {
     const [json, setJson] = useState(initialJson);
     const [loading, setLoading] = useState(false);
@@ -87,12 +87,10 @@ const VideoTour = () => {
         setLoading(true);
         try {
             // 1. Envia o JSON para o backend
-            const response = await fetch(`${API_BASE}/send-shotstack`, {
+            const data = await apiCall("/send-shotstack", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(json),
             });
-            const data = await response.json();
             if (!data.success) throw new Error(data.message);
 
             const renderId = data.id;
@@ -100,28 +98,25 @@ const VideoTour = () => {
 
             // 2. Polling para status
             const poll = setInterval(async () => {
-                console.log("URL chamada:", `${API_BASE}/shotstack-status/${renderId}`);
-                const statusRes = await fetch(`${API_BASE}/shotstack-status/${renderId}`);
-                const text = await statusRes.text();
-                console.log("Resposta bruta do backend:", text);
-                let statusData;
+                console.log("Checking render status for ID:", renderId);
                 try {
-                    statusData = JSON.parse(text);
+                    const statusData = await apiCall(`/shotstack-status/${renderId}`);
+                    console.log("Status response:", statusData);
+                    
+                    if (statusData.status === "done" && statusData.url) {
+                        clearInterval(poll);
+                        setLoading(false);
+                        // Monta a URL do CDN
+                        const cdnUrl = statusData.url;
+                        console.log("Vídeo pronto:", cdnUrl);
+                        alert("Vídeo pronto! Veja o console para a URL.");
+                    } else if (statusData.status === "failed") {
+                        clearInterval(poll);
+                        setLoading(false);
+                        alert("Falha ao renderizar o vídeo.");
+                    }
                 } catch (e) {
-                    //alert("Resposta inesperada do backend: " + text);
-                    throw e;
-                }
-                if (statusData.status === "done" && statusData.url) {
-                    clearInterval(poll);
-                    setLoading(false);
-                    // Monta a URL do CDN
-                    const cdnUrl = statusData.url;
-                    console.log("Vídeo pronto:", cdnUrl);
-                    alert("Vídeo pronto! Veja o console para a URL.");
-                } else if (statusData.status === "failed") {
-                    clearInterval(poll);
-                    setLoading(false);
-                    alert("Falha ao renderizar o vídeo.");
+                    console.error("Erro ao verificar status:", e);
                 }
             }, 4000); // consulta a cada 4 segundos
         } catch (err) {
