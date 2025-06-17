@@ -82,7 +82,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
 
   const handleSubmit = () => {
     setSaving(true);
-    fetch("https://0d7a-191-205-248-153.ngrok-free.app/api/update-images-airtable", {
+    fetch("https://6a93-191-205-248-153.ngrok-free.app/api/update-images-airtable", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(forms)

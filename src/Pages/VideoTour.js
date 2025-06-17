@@ -47,7 +47,7 @@ const initialJson = {
     }
 };
 
-const API_BASE = "https://0d7a-191-205-248-153.ngrok-free.app/api";
+const API_BASE = "https://67cc-191-205-248-153.ngrok-free.app/api";
 
 const VideoTour = () => {
     const [json, setJson] = useState(initialJson);
