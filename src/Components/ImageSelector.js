@@ -9,7 +9,7 @@ import styles from './ImageSelector.module.css';
 import Confetti from 'react-confetti';
 import { apiCall } from '../Config/Config';
 
-const ImageSelector = ({ property, closeImageSelector }) => {
+const ImageSelector = ({ property, client, closeImageSelector }) => {
   const [images, setImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [step, setStep] = useState('select');
@@ -83,9 +83,34 @@ const ImageSelector = ({ property, closeImageSelector }) => {
 
   const handleSubmit = () => {
     setSaving(true);
-    apiCall("/update-images-airtable", {
+    
+    // Mapeia os forms para o formato esperado pelo backend
+    const imagesArray = forms.map(form => {
+      return {
+        imgUrl: form.imgUrl,
+        tipo: form.tipo,         // Room Type
+        retirar: form.retirar,   // Decluttering
+        codigo: property?.fields?.Codigo || '',  // Client Internal Code
+        propertyUrl: property?.fields?.URL_Portal || '', // Property's URL
+        // Todos os campos adicionais do backend já estão definidos lá, não precisamos enviar
+      };
+    });
+    
+    // Objeto para envio ao backend
+    const requestData = {
+      imagesArray: imagesArray,
+      // Enviamos os parâmetros, mas o backend já tem valores padrão
+      email: client?.Email,
+      clientId: client?.ClientId,
+      invoiceId: client?.InvoiceId,
+      userId: client?.UserId
+    };
+
+    console.log('Enviando dados para o backend:', requestData);
+    
+    apiCall("/api/update-images-airtable", {
       method: "POST",
-      body: JSON.stringify(forms)
+      body: JSON.stringify(requestData)
     })
       .then(data => {
         setSaving(false);
@@ -94,7 +119,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
           setTimeout(() => {
             setShowConfetti(false);
             closeImageSelector();
-          }, 4000); // Mostra o confete por 2.2 segundos
+          }, 4000);
         } else {
           alert('Erro ao enviar formulários. Tente novamente.');
         }

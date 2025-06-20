@@ -25,6 +25,13 @@ const SuggestionFeed = () => {
   const { clientPlan, setClientPlan } = useClientPlan();
   const [clientName, setClientName] = useState("Acasa7 Inteligência Imobiliária");
 
+  const client = {
+     Email: "galia@acasa7.com.br",
+     ClientId: "recZqOfnZXwqbbVZY",
+     InvoiceId: "reclDmUiMoLKzRe8k",
+     UserId: "recMjeDtB77Ijl9BL",
+  }
+
   // Função para buscar o plano do cliente pelo nome
   const getClientPlan = async (clientname) => {
     Airtable.configure({
@@ -133,6 +140,7 @@ const SuggestionFeed = () => {
           {showImageSelector && (
             <ImageSelector
               property={selectedProperty}
+              client={client}
               closeImageSelector={closeImageSelector}
             />
           )}
