@@ -25,6 +25,12 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
   const [imageLoaded, setImageLoaded] = useState({});
   const [showFilters, setShowFilters] = useState(window.innerWidth > 600);
 
+  console.log('PropertysList - Recebeu propertyList:', propertyList);
+  console.log('PropertysList - propertyList é array?', Array.isArray(propertyList));
+  console.log('PropertysList - Tamanho da propertyList:', propertyList?.length);
+  console.log('PropertysList - Loading status:', loading);
+  console.log('PropertysList - itemsToShow:', itemsToShow);
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 600) setShowFilters(true);
@@ -34,8 +40,39 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Verificação defensiva para garantir que propertyList é um array
+  const safePropertyList = Array.isArray(propertyList) ? propertyList : [];
+  
+  // Inspecionar alguns itens da lista para debug
+  if (safePropertyList.length > 0) {
+    console.log('PropertysList - Primeiro item da lista:', safePropertyList[0]);
+    console.log('PropertysList - Segundo item da lista (se existir):', safePropertyList[1]);
+    console.log('PropertysList - fields do primeiro item:', safePropertyList[0]?.fields);
+    console.log('PropertysList - Tipo do primeiro item:', typeof safePropertyList[0]);
+    
+    // Ver se tem o _rawJson para saber se é um objeto Airtable Record
+    console.log('PropertysList - _rawJson?', safePropertyList[0]?._rawJson);
+  }
+  
   // Filtro aplicado sobre a lista
-  const filteredList = propertyList.filter((property) => {
+  const filteredList = safePropertyList.filter((property) => {
+    // Verificar se property e fields existem
+    if (!property) {
+      console.log('PropertysList - Item nulo/undefined encontrado');
+      return false;
+    }
+    
+    // Verificar se é um objeto Airtable Record
+    if (typeof property.get === 'function') {
+      // É um objeto Airtable Record, temos que usar os métodos próprios
+      return true;
+    }
+    
+    if (!property.fields) {
+      console.log('PropertysList - Item sem fields encontrado:', property);
+      return false;
+    }
+    
     const { fields } = property;
     const valor = Number(fields.Valor) || 0;
     const area = Number(fields.Area_util) || 0;
@@ -64,9 +101,19 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
     return true;
   });
 
-  // Coleta opções únicas para selects dinâmicos
-  const tipos = Array.from(new Set(propertyList.map(p => p.fields.Tipo).filter(Boolean)));
-  const ufs = Array.from(new Set(propertyList.map(p => p.fields.UF).filter(Boolean)));
+  // Coleta opções únicas para selects dinâmicos (com verificação defensiva)
+  const tipos = Array.isArray(safePropertyList) 
+    ? Array.from(new Set(safePropertyList
+        .filter(p => p && p.fields)
+        .map(p => p.fields.Tipo)
+        .filter(Boolean)))
+    : [];
+  const ufs = Array.isArray(safePropertyList)
+    ? Array.from(new Set(safePropertyList
+        .filter(p => p && p.fields)
+        .map(p => p.fields.UF)
+        .filter(Boolean)))
+    : [];
 
   // Resetar para o início ao mudar filtro ou busca
   const handleFilterChange = (fn) => (e) => {
@@ -76,9 +123,24 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
     setSearchTerm(e.target.value);
   };
 
+  // Normalizamos a lista para garantir o formato correto
+  const normalizedList = filteredList.map(property => {
+    // Se for um objeto Airtable Record, extraímos os dados corretamente
+    if (typeof property.get === 'function') {
+      return {
+        id: property.id,
+        fields: property.fields
+      };
+    }
+    // Caso contrário, assumimos que já está no formato correto
+    return property;
+  });
+  
+  console.log('PropertysList - Lista normalizada primeiro item:', normalizedList[0]);
+  
   // Lista incremental
-  const paginatedList = filteredList.slice(0, itemsToShow);
-
+  const paginatedList = normalizedList.slice(0, itemsToShow);
+  
   // Ao clicar, envie o índice global do imóvel selecionado
   const setProperty = (property, idx) => {
     selectProperty(property, idx);

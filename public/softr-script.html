@@ -1,0 +1,80 @@
+<!-- Cole em Page Settings ▸ Custom Code ▸ Header (ou em um bloco Custom Code) -->
+<script>
+    /**
+     * Tenta pegar o e-mail exposto pelo Softr e, se existir,
+     * passa para o iframe.
+     */
+    function captureAndSendEmail() {
+        // Softr injeta as infos de usuário em window.logged_in_user
+        const email =
+            window.logged_in_user?.softr_user_email ||           // padrão Softr ≥2023
+            window.logged_in_user?.EMAIL ||                      // fallback histórico
+            null;
+        if (!email) return false;            // ainda não carregou – tentaremos de novo
+        
+        console.log('[RUUM] e-mail capturado:', email);
+        
+        // Enviar o email para o iframe
+        const iframe = document.getElementById('ruum-iframe');
+        if (iframe) {
+            // Método 1: Passar via URL do iframe
+            const url = new URL(iframe.src);
+            url.hash = email;                  // adicionar como hash
+            url.searchParams.set('email', email); // adicionar como query parameter
+            iframe.src = url.toString();
+            console.log('[RUUM] URL do iframe atualizada:', url.toString());
+
+            // Método 2: Enviar via postMessage após o iframe carregar
+            setTimeout(() => {
+                try {
+                    // Enviar o email para o iframe
+                    iframe.contentWindow.postMessage({ softrUserEmail: email }, '*');
+                    console.log('[RUUM] e-mail enviado para iframe via postMessage:', email);
+                } catch (e) {
+                    console.error('[RUUM] erro ao enviar email via postMessage:', e);
+                }
+            }, 1000);
+        }
+        return true;
+    }
+    /**
+     * Softr carrega o objeto logged_in_user alguns milissegundos
+     * depois do DOM. Fazemos vários checks até encontrá-lo.
+     */
+    (function waitForSoftr(maxTries = 25, waitMs = 300) {
+        let tries = 0;
+        let emailCaptured = false;
+        const id = setInterval(() => {
+            emailCaptured = captureAndSendEmail();
+            if (emailCaptured || ++tries >= maxTries) clearInterval(id);
+        }, waitMs);
+    })();
+
+    // Escutar requisições do iframe para obter o email
+    window.addEventListener('message', function (event) {
+        console.log('[RUUM] Mensagem recebida do iframe:', event.data);
+        
+        // Se o iframe está solicitando o email
+        if (event.data && event.data.type === 'REQUEST_EMAIL') {
+            console.log('[RUUM] Iframe solicitou o email');
+
+            // Buscar o email diretamente do objeto do Softr
+            const email = window.logged_in_user?.softr_user_email || window.logged_in_user?.EMAIL;
+
+            if (email) {
+                console.log('[RUUM] Email encontrado para enviar:', email);
+                
+                // Enviar o email para o iframe
+                const iframe = document.getElementById('ruum-iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ softrUserEmail: email }, '*');
+                    console.log('[RUUM] Email enviado para o iframe');
+                } else {
+                    console.error('[RUUM] Iframe não encontrado');
+                }
+            } else {
+                console.log('[RUUM] Email não encontrado para enviar ao iframe');
+            }
+        }
+    });
+</script>
