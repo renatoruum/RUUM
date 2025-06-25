@@ -80,6 +80,7 @@ const ImageSelector = ({ property, closeImageSelector }) => {
   };
 
   const handleSubmit = () => {
+    console.log('Enviando formulários:', forms);
     setSaving(true);
     fetch("https://6a93-191-205-248-153.ngrok-free.app/api/update-images-airtable", {
       method: "POST",
