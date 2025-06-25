@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useClientPlan } from '../Contexts/ClientPlanProvider';
 import CustomModal from './CustomModal';
-import SmartStageForm from './SmartStageForm';
-import AtelierForm from './AtelierForm';
+import ChoosForm from './ChoosForm';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import styles from './ImageSelector.module.css';
@@ -291,30 +290,17 @@ const ImageSelector = ({ property, closeImageSelector }) => {
 
       {step !== 'select' && (
         <CustomModal show={showFormModal} onClose={backToSelector}>
-          {clientPlan === "Imob"
-            ? <SmartStageForm
-                currentForm={currentForm}
-                formIndex={formIndex}
-                forms={forms}
-                handleFormChange={handleFormChange}
-                handlePrev={handlePrev}
-                handleNext={handleNext}
-                selectedIndexes={forms.map(f => f.originalIndex)}
-                property={property}
-                handleSubmit={handleSubmit}
-              />
-            : <AtelierForm
-                currentForm={currentForm}
-                formIndex={formIndex}
-                forms={forms}
-                handleFormChange={handleFormChange}
-                handlePrev={handlePrev}
-                handleNext={handleNext}
-                handleSubmit={handleSubmit}
-                selectedIndexes={forms.map(f => f.originalIndex)}
-                property={property}
-              />
-          }
+          <ChoosForm
+            currentForm={currentForm}
+            formIndex={formIndex}
+            forms={forms}
+            handleFormChange={handleFormChange}
+            handlePrev={handlePrev}
+            handleNext={handleNext}
+            handleSubmit={handleSubmit}
+            selectedIndexes={forms.map(f => f.originalIndex)}
+            property={property}
+          />
         </CustomModal>
       )}
     </>

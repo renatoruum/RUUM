@@ -1,3 +1,4 @@
+
 //STYLES
 import styles from './SuggestionFeed.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -6,14 +7,14 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { useState, useEffect } from 'react';
 import { useClientPlan } from '../Contexts/ClientPlanProvider';
 //Components
-import PropertysList from '../Components/PropertysList.fixed';
+import PropertysList from '../Components/PropertysList';
 import ImageSelector from '../Components/ImageSelector';
 //Airtable
 import Airtable from 'airtable';
 //Constants
 import { PAGE_SIZE } from '../constants';
 
-const SuggestionFeed = ({ softrEmail }) => {
+const SuggestionFeed = () => {
   const [records, setRecords] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [showPropertysList, setShowPropertysList] = useState(true);
@@ -24,9 +25,6 @@ const SuggestionFeed = ({ softrEmail }) => {
   const [itemsToShow, setItemsToShow] = useState(PAGE_SIZE);
   const { clientPlan, setClientPlan } = useClientPlan();
   const [clientName, setClientName] = useState("Acasa7 Inteligência Imobiliária");
-  const [userEmail, setUserEmail] = useState('');
-
-  console.log('SuggestionFeed - Email recebido via props:', softrEmail);
 
   // Função para buscar o plano do cliente pelo nome
   const getClientPlan = async (clientname) => {
@@ -67,7 +65,6 @@ const SuggestionFeed = ({ softrEmail }) => {
 
   // Fetch all records on mount
   useEffect(() => {
-    console.log('SuggestionFeed - Fetching records from Airtable...');
     setLoading(true);
     Airtable.configure({
       apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
@@ -86,19 +83,20 @@ const SuggestionFeed = ({ softrEmail }) => {
           console.error('Error fetching records:', err);
           return;
         }
-        console.log('SuggestionFeed - Records obtidos do Airtable:', allRecords);
-        console.log('SuggestionFeed - Número de records:', allRecords.length);
+        
+        // Debug dos records recebidos
+        console.log('SuggestionFeed - Total de records recebidos:', allRecords.length);
+        
+        if (allRecords.length > 0) {
+          console.log('SuggestionFeed - Amostra do primeiro record:', allRecords[0]);
+          console.log('SuggestionFeed - Tipo do primeiro record:', typeof allRecords[0]);
+          console.log('SuggestionFeed - É um objeto Airtable Record?', typeof allRecords[0]?.get === 'function');
+          console.log('SuggestionFeed - Tem fields?', !!allRecords[0]?.fields);
+        }
+        
         setRecords(allRecords);
       }
     );
-  }, []);
-
-  // Verificar se as variáveis de ambiente estão sendo carregadas
-  useEffect(() => {
-    console.log('SuggestionFeed - Verificando variáveis de ambiente:');
-    console.log('REACT_APP_AIRTABLE_API_KEY existe?', !!process.env.REACT_APP_AIRTABLE_API_KEY);
-    console.log('REACT_APP_AIRTABLE_API_KEY comprimento:', process.env.REACT_APP_AIRTABLE_API_KEY?.length);
-    console.log('REACT_APP_AIRTABLE_BASE_ID:', process.env.REACT_APP_AIRTABLE_BASE_ID);
   }, []);
 
   // Paginação
@@ -141,15 +139,6 @@ const SuggestionFeed = ({ softrEmail }) => {
                 setItemsToShow={setItemsToShow}
                 loading={loading}
               />
-              {/* Debug info */}
-              <div style={{ margin: '20px', padding: '20px', border: '1px solid #ccc' }}>
-                <h5>Debug Info:</h5>
-                <p>Records: {records ? records.length : 0}</p>
-                <p>Loading: {loading ? 'true' : 'false'}</p>
-                <p>ItemsToShow: {itemsToShow}</p>
-                <p>ShowPropertysList: {showPropertysList ? 'true' : 'false'}</p>
-                <p>SoftrEmail: {softrEmail || 'não definido'}</p>
-              </div>
 
             </>
           )}
@@ -159,6 +148,7 @@ const SuggestionFeed = ({ softrEmail }) => {
               closeImageSelector={closeImageSelector}
             />
           )}
+          
         </div>
       </div>
     </div>

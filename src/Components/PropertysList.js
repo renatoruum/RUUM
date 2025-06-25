@@ -25,12 +25,6 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
   const [imageLoaded, setImageLoaded] = useState({});
   const [showFilters, setShowFilters] = useState(window.innerWidth > 600);
 
-  console.log('PropertysList - Recebeu propertyList:', propertyList);
-  console.log('PropertysList - propertyList é array?', Array.isArray(propertyList));
-  console.log('PropertysList - Tamanho da propertyList:', propertyList?.length);
-  console.log('PropertysList - Loading status:', loading);
-  console.log('PropertysList - itemsToShow:', itemsToShow);
-
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 600) setShowFilters(true);
@@ -43,37 +37,41 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
   // Verificação defensiva para garantir que propertyList é um array
   const safePropertyList = Array.isArray(propertyList) ? propertyList : [];
   
-  // Inspecionar alguns itens da lista para debug
+  console.log('PropertysList - propertyList seguro, tamanho:', safePropertyList.length);
+  
+  // Examinar o primeiro item para debug
   if (safePropertyList.length > 0) {
-    console.log('PropertysList - Primeiro item da lista:', safePropertyList[0]);
-    console.log('PropertysList - Segundo item da lista (se existir):', safePropertyList[1]);
-    console.log('PropertysList - fields do primeiro item:', safePropertyList[0]?.fields);
+    console.log('PropertysList - Amostra do primeiro item:', safePropertyList[0]);
     console.log('PropertysList - Tipo do primeiro item:', typeof safePropertyList[0]);
-    
-    // Ver se tem o _rawJson para saber se é um objeto Airtable Record
-    console.log('PropertysList - _rawJson?', safePropertyList[0]?._rawJson);
+    console.log('PropertysList - Tem fields?', !!safePropertyList[0]?.fields);
+    if (typeof safePropertyList[0]?.get === 'function') {
+      console.log('PropertysList - É um objeto Airtable Record');
+      console.log('PropertysList - Fields via get():', safePropertyList[0].get('Valor'));
+    }
   }
   
-  // Filtro aplicado sobre a lista
+  // Filtro aplicado sobre a lista com verificação defensiva
   const filteredList = safePropertyList.filter((property) => {
-    // Verificar se property e fields existem
-    if (!property) {
-      console.log('PropertysList - Item nulo/undefined encontrado');
-      return false;
-    }
+    // Verificar se o property é válido
+    if (!property) return false;
     
-    // Verificar se é um objeto Airtable Record
+    // Tentar obter campos - suporta tanto objetos normais quanto Airtable Records
+    let fields;
     if (typeof property.get === 'function') {
-      // É um objeto Airtable Record, temos que usar os métodos próprios
-      return true;
-    }
-    
-    if (!property.fields) {
-      console.log('PropertysList - Item sem fields encontrado:', property);
+      // É um objeto Airtable Record
+      fields = property.fields;
+    } else if (property.fields) {
+      // É um objeto com campo fields
+      fields = property.fields;
+    } else {
+      // Não tem a estrutura esperada
+      console.error('PropertysList - Item com formato inesperado:', property);
       return false;
     }
     
-    const { fields } = property;
+    // Verificar se fields existe
+    if (!fields) return false;
+    
     const valor = Number(fields.Valor) || 0;
     const area = Number(fields.Area_util) || 0;
 
@@ -101,19 +99,26 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
     return true;
   });
 
-  // Coleta opções únicas para selects dinâmicos (com verificação defensiva)
-  const tipos = Array.isArray(safePropertyList) 
-    ? Array.from(new Set(safePropertyList
-        .filter(p => p && p.fields)
-        .map(p => p.fields.Tipo)
-        .filter(Boolean)))
-    : [];
-  const ufs = Array.isArray(safePropertyList)
-    ? Array.from(new Set(safePropertyList
-        .filter(p => p && p.fields)
-        .map(p => p.fields.UF)
-        .filter(Boolean)))
-    : [];
+  // Coleta opções únicas para selects dinâmicos com verificação defensiva
+  const tipos = Array.from(new Set(safePropertyList
+    .filter(p => p && (p.fields || typeof p.get === 'function'))
+    .map(p => {
+      if (typeof p.get === 'function') {
+        return p.get('Tipo');
+      }
+      return p.fields?.Tipo;
+    })
+    .filter(Boolean)));
+    
+  const ufs = Array.from(new Set(safePropertyList
+    .filter(p => p && (p.fields || typeof p.get === 'function'))
+    .map(p => {
+      if (typeof p.get === 'function') {
+        return p.get('UF');
+      }
+      return p.fields?.UF;
+    })
+    .filter(Boolean)));
 
   // Resetar para o início ao mudar filtro ou busca
   const handleFilterChange = (fn) => (e) => {
@@ -123,24 +128,9 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
     setSearchTerm(e.target.value);
   };
 
-  // Normalizamos a lista para garantir o formato correto
-  const normalizedList = filteredList.map(property => {
-    // Se for um objeto Airtable Record, extraímos os dados corretamente
-    if (typeof property.get === 'function') {
-      return {
-        id: property.id,
-        fields: property.fields
-      };
-    }
-    // Caso contrário, assumimos que já está no formato correto
-    return property;
-  });
-  
-  console.log('PropertysList - Lista normalizada primeiro item:', normalizedList[0]);
-  
   // Lista incremental
-  const paginatedList = normalizedList.slice(0, itemsToShow);
-  
+  const paginatedList = filteredList.slice(0, itemsToShow);
+
   // Ao clicar, envie o índice global do imóvel selecionado
   const setProperty = (property, idx) => {
     selectProperty(property, idx);
@@ -150,13 +140,41 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
   useEffect(() => {
     const nextPage = filteredList.slice(itemsToShow, itemsToShow + PAGE_SIZE);
     nextPage.forEach(property => {
-      const images = property.fields.Fotos_URLs
-        ? property.fields.Fotos_URLs.split('\n').filter(Boolean)
-        : [];
-      images.forEach(url => {
-        const img = new window.Image();
-        img.src = url;
-      });
+      try {
+        // Verificar se property e fields existem
+        if (!property) return;
+        
+        // Obter os campos - suporta tanto objetos normais quanto Airtable Records
+        let fields;
+        if (typeof property.get === 'function') {
+          // É um objeto Airtable Record
+          fields = property.fields;
+        } else if (property.fields) {
+          // É um objeto com campo fields
+          fields = property.fields;
+        } else {
+          // Não tem a estrutura esperada
+          return;
+        }
+        
+        if (!fields || !fields.Fotos_URLs) return;
+        
+        const images = fields.Fotos_URLs.split('\n').filter(Boolean);
+        
+        // Corrigir URLs HTTP para HTTPS para evitar Mixed Content
+        images.forEach(url => {
+          try {
+            // Converter URLs HTTP para HTTPS
+            const secureUrl = url.replace(/^http:\/\//i, 'https://');
+            const img = new window.Image();
+            img.src = secureUrl;
+          } catch (e) {
+            console.error('Erro ao pré-carregar imagem:', e);
+          }
+        });
+      } catch (e) {
+        console.error('Erro ao processar URLs de imagens:', e);
+      }
     });
   }, [itemsToShow, filteredList]);
 
@@ -302,10 +320,52 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
           {/* Lista de imóveis */}
           <div className={styles.gridContainer}>
             {paginatedList.map((property, idx) => {
-              const { fields, id } = property;
-              const images = fields.Fotos_URLs
-                ? fields.Fotos_URLs.split('\n').filter(Boolean)
-                : [];
+              // Verificação defensiva para garantir que os campos existem
+              if (!property) {
+                console.log('PropertysList - Item nulo/undefined encontrado no map');
+                return null;
+              }
+              
+              // Obter os campos - suporta tanto objetos normais quanto Airtable Records
+              let fields, id;
+              
+              try {
+                if (typeof property.get === 'function') {
+                  // É um objeto Airtable Record
+                  fields = property.fields;
+                  id = property.id;
+                } else if (property.fields) {
+                  // É um objeto com campo fields
+                  fields = property.fields;
+                  id = property.id || `property-${idx}`;
+                } else {
+                  // Não tem a estrutura esperada
+                  console.error('PropertysList - Item com formato inesperado no map:', property);
+                  return null;
+                }
+              } catch (e) {
+                console.error('PropertysList - Erro ao processar item:', e);
+                return null;
+              }
+              
+              // Verificar se fields existe
+              if (!fields) {
+                console.error('PropertysList - Item sem fields:', property);
+                return null;
+              }
+              
+              // Processar imagens de forma segura
+              let images = [];
+              try {
+                if (fields.Fotos_URLs) {
+                  images = fields.Fotos_URLs.split('\n')
+                    .filter(Boolean)
+                    .map(url => url.replace(/^http:\/\//i, 'https://'));
+                }
+              } catch (e) {
+                console.error('PropertysList - Erro ao processar URLs de imagens:', e);
+              }
+              
               const desc = fields.Descricao || 'Sem descrição.';
               const isClamped = shouldClamp(desc) && !expandedDesc[id];
               return (
@@ -349,6 +409,17 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
                               onLoad={() =>
                                 setImageLoaded(prev => ({ ...prev, [`${id}-${i}`]: true }))
                               }
+                              onError={(e) => {
+                                console.error('PropertysList - Erro ao carregar imagem:', e.target.src);
+                                // Tentar novamente com HTTP se HTTPS falhar
+                                if (e.target.src.startsWith('https://')) {
+                                  e.target.src = e.target.src.replace(/^https:\/\//i, 'http://');
+                                } else {
+                                  // Se falhar, mostrar imagem de placeholder
+                                  e.target.src = 'https://via.placeholder.com/400x300?text=Imagem+não+disponível';
+                                  setImageLoaded(prev => ({ ...prev, [`${id}-${i}`]: true }));
+                                }
+                              }}
                             />
                           </div>
                         ))}

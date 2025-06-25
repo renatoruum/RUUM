@@ -1,0 +1,757 @@
+/* Definição global da fonte para todos os elementos do ChoosForm */
+* {
+  font-family: 'Channel 4 Chadwick', sans-serif;
+  font-style: normal;
+}
+
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Changed from center to flex-start for left alignment */
+  justify-content: flex-start; /* Changed from center to flex-start for left alignment */
+  background: transparent;
+  padding: 1.5rem 1rem 1rem 1rem; /* Reduzido padding vertical */
+  width: 100%;
+  height: 100%;
+  max-width: 1300px; /* Further increased to ensure all cards fit in one row */
+  margin: 0 auto;
+}
+
+.formTitle {
+  font-size: 1.7rem;
+  font-weight: bold;
+  color: #1a2233;
+  margin-bottom: 0.7rem; /* Reduzido espaçamento inferior */
+  text-align: center; /* Keeping titles centered */
+  width: 100%;
+  font-family: '4text', sans-serif;
+}
+
+.formSubtitle {
+  font-size: 1.1rem;
+  color: #637381;
+  margin-bottom: 2.5rem;
+  text-align: center; /* Keeping subtitles centered */
+  max-width: 80%;
+  line-height: 1.5;
+  align-self: center;
+  font-family: '4text', sans-serif;
+}
+
+.modelSelector {
+  display: flex;
+  flex-wrap: nowrap; /* Changed from wrap to nowrap to ensure cards stay in one row */
+  justify-content: space-between; /* Changed to space-between to maximize space usage */
+  align-items: stretch; /* Ensure all cards have the same height */
+  gap: 1rem; /* Reduced gap to fit all cards in one row */
+  margin: 1rem 0 3rem;
+  width: 100%;
+  max-width: 1200px;
+  align-self: center; /* Keep this centered horizontally */
+}
+
+.modelCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Changed from center to flex-start for left alignment */
+  flex: 1; /* Each card takes equal available space */
+  width: 31%; /* Changed width to ensure 3 cards fit in one row with gap */
+  min-width: 280px; /* Reduced min-width to ensure they fit in one row */
+  max-width: 32%; /* Added max-width to maintain proper spacing */
+  padding: 1.5rem 1rem 3.5rem 1rem; /* Aumentado bottom padding para o botão */
+  border-radius: 16px;
+  border: 2px solid #e6eaf0;
+  transition: all 0.2s ease-in-out;
+  background-color: #fff;
+  box-shadow: 0 4px 12px rgba(44, 62, 80, 0.06);
+  margin-bottom: 0.5rem;
+  position: relative; /* Added for positioning child elements */
+  cursor: default; /* Changed from pointer to default since we're using buttons */
+  height: 100%; /* Ensure all cards have the same height */
+  justify-content: flex-start; /* Alterado para flex-start para evitar espaçamento excessivo */
+}
+
+
+
+.modelCardSelected {
+  border-color: #68bf6c;
+  background-color: rgba(104, 191, 108, 0.05);
+  box-shadow: 0 6px 18px rgba(104, 191, 108, 0.15);
+}
+
+.modelCardSelected .iconImg {
+  transform: scale(1.05);
+}
+
+.modelIcon {
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
+  color: #68bf6c;
+  transition: transform 0.2s ease;
+}
+
+.modelIconImage {
+  width: 100%;
+  height: 140px; /* Reduzido altura */
+  display: flex;
+  justify-content: center; /* Keep images centered */
+  align-items: center;
+  margin-bottom: 1rem; /* Reduzido espaço inferior */
+  margin-top: 0; /* Ensures no extra top margin */
+  transition: transform 0.2s ease;
+  overflow: hidden;
+  border-radius: 8px;
+  align-self: center; /* Center the image container in the card */
+}
+
+.modelIconVideo {
+  width: 100%;
+  height: 140px; /* Reduzido altura - igual às imagens */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem; /* Reduzido espaço inferior */
+  margin-top: 0;
+  transition: transform 0.2s ease;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: #000;
+  position: relative; /* Added for positioning the play button overlay */
+  align-self: center; /* Center the video container in the card */
+}
+
+.iconImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.videoPreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+/* Adding a slight overlay on paused video */
+.modelCard:not(:hover) .videoPreview {
+  filter: brightness(0.9) contrast(1.1);
+}
+
+/* Adding a play indicator when paused */
+.modelIconVideo::after {
+  content: '▶';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 2rem;
+  background: rgba(104, 191, 108, 0.7);
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Hide play button when hovering or when card is selected */
+.modelCard:hover .modelIconVideo::after,
+.modelCardSelected .modelIconVideo::after {
+  opacity: 0;
+}
+
+.modelCardSelected .modelIcon {
+  color: #4da751;
+}
+
+.modelName {
+  font-size: 1.5rem; /* 24px */
+  margin-bottom: 0.5rem;
+  color: #1a2233;
+  text-align: left;
+  width: 100%;
+  padding: 0 0.5rem;
+  font-family: '4text', sans-serif;
+}
+
+.modelDescription {
+  font-size: 0.9rem; /* 14px */
+  line-height: 1.3;
+  color: #637381;
+  text-align: left;
+  margin-bottom: 0.6rem;
+  width: 100%;
+  padding: 0 0.5rem;
+  font-family: '4text', sans-serif;
+  font-weight: 400;
+}
+
+.continueButton {
+  background-color: #68bf6c;
+  color: #fff;
+  border: none;
+  font-weight: 400;
+  font-size: 1rem; /* 16px */
+  padding: 0.8em 2em;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(104, 191, 108, 0.18);
+  cursor: pointer;
+  width: 100%;
+  max-width: 240px;
+  transition: all 0.2s ease;
+  margin-top: 1.5rem;
+  align-self: center; /* Center the button */
+  letter-spacing: 0.01em;
+  font-family: '4text', sans-serif;
+}
+
+.continueButton:hover {
+  background-color: #5aad5e;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(104, 191, 108, 0.22);
+}
+
+.continueButton:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(104, 191, 108, 0.20);
+}
+
+.continueButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(104, 191, 108, 0.10);
+}
+
+.cardButton {
+  background-color: #3f51b5;
+  color: #fff;
+  border: none;
+  font-weight: 400;
+  font-size: 1rem; /* 16px */
+  padding: 0.8em 1em;
+  border-radius: 24px; /* Well-rounded borders */
+  box-shadow: 0 4px 12px rgba(63, 81, 181, 0.2);
+  cursor: pointer;
+  width: 100%; 
+  transition: all 0.2s ease;
+  text-align: center;
+  letter-spacing: 0.01em;
+  margin: 0; /* Remove all margins as positioning is handled by container */
+  font-family: '4text', sans-serif;
+}
+
+.cardButton:hover {
+  background-color: #303f9f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(63, 81, 181, 0.25);
+}
+
+.cardButton:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(63, 81, 181, 0.2);
+}
+
+.cardButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(63, 81, 181, 0.1);
+}
+
+.formContentContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animation for form transitions */
+.fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal Container Styles */
+.modalContentGrid {
+  display: flex;
+  height: 100%;
+  min-height: 480px;
+  width: 100%;
+  align-items: center;
+  position: relative;
+  gap: 0;
+}
+
+.leftCol,
+.rightCol {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  height: 100%;
+  min-height: 400px;
+  padding: 7% 5% 5% 5%;
+}
+
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+  min-height: 400px;
+  padding: 5%;
+  background: #fff;
+  border-radius: 18px;
+}
+
+.divider {
+  grid-row: 1 / span 1;
+  grid-column: 2 / span 1;
+  justify-self: center;
+  align-self: center;
+  width: 2px;
+  height: 80%;
+  background: linear-gradient(to bottom, #e6eaf0 10%, #cfd8dc 90%);
+  border-radius: 2px;
+  opacity: 0.5;
+}
+
+.formNavGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* Form Image Styles */
+.formImageBoxGrid {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.2rem;
+}
+
+.formImageGrid {
+  width: 100%;
+  max-width: 350px;
+  height: auto;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+}
+
+.formAreaGrid {
+  width: 100%;
+}
+
+.formSelect {
+  border-radius: 8px;
+  border: 1px solid #e6eaf0;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  color: #1a2233;
+  transition: border-color 0.2s;
+}
+
+.formSelect:focus {
+  border-color: #68bf6c;
+  box-shadow: 0 0 0 3px rgba(104, 191, 108, 0.15);
+  outline: none;
+}
+
+/* Features List Styles */
+.featuresList {
+  list-style: none;
+  padding: 0;
+  margin: 0.3rem 0 0 0; /* Margem superior reduzida */
+  width: 100%;
+  text-align: left;
+  flex-grow: 0; /* Prevent list from growing and pushing button down */
+  max-height: 100px; /* Altura máxima reduzida */
+  overflow: hidden; /* Esconde o conteúdo que ultrapasse a altura máxima */
+}
+
+.featureItem {
+  font-size: 0.8rem; /* 13px */
+  color: #637381;
+  margin-bottom: 0.2rem;
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.2;
+  font-family: '4text', sans-serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.bulletPoint {
+  color: #68bf6c;
+  margin-right: 0.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* Estilos para os cards de grupo */
+.groupsWrapper {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: stretch; /* Mantém stretch para garantir altura igual dos filhos */
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0.5rem 0 1rem; /* Margens superior e inferior reduzidas */
+  align-self: center;
+}
+
+.groupSection {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.groupCard {
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
+  border-radius: 16px;
+  border: 2px solid #e6eaf0;
+  box-shadow: 0 4px 12px rgba(44, 62, 80, 0.06);
+  padding: 1.2rem 1.5rem 0.8rem 1.5rem; /* Reduzido padding vertical */
+  position: relative;
+  align-items: flex-start;
+  height: 540px; /* Altura ainda mais reduzida */
+  min-height: auto;
+}
+
+.imageGroupCard {
+  flex: 3;
+  width: 100%;
+}
+
+.videoGroupCard {
+  flex: 1;
+  width: 100%;
+}
+
+.groupTitle {
+  font-size: 28px; /* Tamanho reduzido */
+  font-weight: 700;
+  color: #68bf6c;
+  margin-bottom: 1rem; /* Espaçamento inferior reduzido */
+  font-family: '4text', sans-serif;
+  width: 100%;
+  text-align: left;
+  padding-left: 0.5rem;
+  background-color: transparent;
+}
+
+.groupContent {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center; /* Centraliza verticalmente os cards */
+  height: calc(100% - 45px); /* Altura ajustada para considerar o título */
+}
+
+/* Ajustes para os cards dentro dos grupos */
+.groupContent .modelCard {
+  width: 48%;
+  min-width: 220px;
+  max-width: 49%;
+  padding: 1rem 0.75rem 3rem 0.75rem; /* Reduzido padding vertical */
+  margin-bottom: 0;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.05);
+  height: 420px; /* Altura reduzida para todos os cards */
+  min-height: 420px;
+  position: relative; /* Para posicionamento absoluto do botão */
+}
+
+.videoGroupCard .modelCard {
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  height: 420px; /* Mesma altura dos outros cards */
+}
+
+/* Ajuste para manter os 3 cards com o mesmo tamanho */
+.imageGroupCard, .videoGroupCard {
+  flex-basis: auto;
+}
+
+.groupSection:first-child {
+  width: 66%;
+}
+
+.groupSection:last-child {
+  width: 33%;
+}
+
+/* Menor tamanho de fontes para os cards internos */
+.groupContent .modelName {
+  font-size: 1.1rem;
+}
+
+.groupContent .modelDescription,
+.groupContent .featureItem {
+  font-size: 0.8rem;
+}
+
+.groupContent .cardButton {
+  font-size: 0.9em;
+  padding: 0.7em 0.9em;
+  height: 38px; /* Altura fixa para todos os botões */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ajuste do selector original */
+.modelSelector {
+  display: none; /* Escondemos o seletor original pois agora usamos o groupContainer */
+}
+
+@media (max-width: 1000px) {
+  .groupsWrapper {
+    flex-direction: column;
+    gap: 1.5rem; /* Gap reduzido */
+  }
+  
+  .groupSection {
+    width: 100% !important;
+  }
+  
+  .imageGroupCard,
+  .videoGroupCard {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    padding-bottom: 0.8rem; /* Padding inferior reduzido */
+  }
+  
+  .groupSection:first-child {
+    margin-bottom: 1.2rem; /* Margem inferior reduzida */
+  }
+  
+  .groupContent .modelCard {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    margin-bottom: 0.8rem; /* Margem inferior reduzida */
+    height: 400px; /* Altura reduzida */
+    min-height: 400px;
+    padding-bottom: 4rem; /* Padding inferior reduzido */
+  }
+  
+  .groupContent {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .groupTitle {
+    font-size: 28px;
+    margin-bottom: 1.25rem;
+  }
+  
+  .contentWrapper {
+    min-height: 320px; /* Aumentado para acomodar o conteúdo melhor */
+  }
+}
+
+/* Responsivo */
+@media (max-width: 1000px) {
+  .modelSelector {
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .modelCard {
+    width: 90%;
+    min-width: auto;
+    max-width: 480px;
+    padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+  }
+  
+  .modelIconImage {
+    height: 150px;
+  }
+  
+  .featuresList {
+    margin: 0.7rem 0 0;
+    max-width: 100%;
+    padding: 0 0.5rem;
+  }
+  
+  .featureItem {
+    font-size: 0.8rem;
+    justify-content: flex-start;
+    text-align: left;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  .cardButton {
+    font-size: 0.9em;
+    padding: 0.7em 1em;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1000px) {
+  .modelCard {
+    width: 80%;
+  }
+}
+
+@media (min-width: 1001px) and (max-width: 1200px) {
+  .modelSelector {
+    flex-wrap: nowrap;
+    gap: 0.75rem; /* Further reduced gap for smaller screens */
+  }
+  
+  .modelCard {
+    width: 32%;
+    min-width: 270px;
+    padding: 1.5rem 1rem 2rem 1rem;
+  }
+  
+  .modelIconImage {
+    height: 150px;
+  }
+  
+  /* Ajustes adicionais para responsividade */
+  .groupCard {
+    padding: 1.25rem 1rem;
+  }
+  
+  .groupTitle {
+    font-size: 28px;
+    margin-bottom: 1rem;
+  }
+  
+  .groupContent .modelCard {
+    padding: 1rem 0.75rem;
+  }
+  
+  .groupContent .modelIconImage,
+  .groupContent .modelIconVideo {
+    height: 140px;
+  }
+}
+
+/* Garantir alturas iguais nos cards de grupo */
+.groupsWrapper {
+  min-height: auto; /* Remover altura mínima fixa para comportamento mais natural */
+}
+
+/* Ajustes para telas médias */
+@media (max-width: 1200px) and (min-width: 1001px) {
+  .groupSection:first-child {
+    width: 65%; 
+  }
+  
+  .groupSection:last-child {
+    width: 34%;
+  }
+}
+
+/* Ajuste do tamanho das imagens/vídeos nos cards */
+.groupContent .modelIconImage,
+.groupContent .modelIconVideo {
+  height: 130px; /* Reduzido ainda mais a altura das imagens/vídeos nos cards de grupo */
+  margin-bottom: 0.8rem; /* Reduzido o espaçamento inferior */
+}
+
+/* Hide play button when hovering or card is selected */
+.modelCard:hover .modelIconVideo::after,
+.modelCardSelected .modelIconVideo::after {
+  opacity: 0;
+}
+
+/* Efeito específico para vídeo em hover */
+.modelCard:hover .videoPreview {
+  transform: scale(1.05);
+  filter: brightness(1.1) contrast(1.1);
+}
+
+/* Também aplicamos o mesmo efeito quando o card está selecionado */
+.modelCardSelected .videoPreview {
+  transform: scale(1.05);
+  filter: brightness(1.1) contrast(1.1);
+}
+
+.contentWrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-grow: 1;
+  min-height: 320px; /* Altura reduzida */
+  max-height: 340px; /* Altura máxima reduzida */
+  position: relative;
+  overflow: hidden; /* Garantir que o conteúdo muito grande não afete o layout */
+}
+
+.buttonContainer {
+  width: 100%;
+  margin-top: auto; /* Push to bottom of card */
+  padding: 0 0.75rem 1rem; /* Padding inferior reduzido */
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 60px; /* Altura reduzida */
+}
+
+/* A classe .modelCard já está definida acima, não precisamos duplicá-la */
+
+/* Media query to handle smaller screens */
+@media (max-width: 768px) {
+  .modelSelector {
+    flex-direction: column;
+  }
+
+  .modelCard {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 1rem;
+  }
+}
+
+.firstWord {
+  font-weight: 400;
+}
+
+.remainingWords {
+  font-weight: 700;
+}

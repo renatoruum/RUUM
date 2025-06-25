@@ -7,9 +7,7 @@ import './Home.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
-const Home = ({ softrEmail }) => {
-
-  console.log('Home - Email recebido via props:', softrEmail);
+const Home = () => {
 
   const navigate = useNavigate();
 
@@ -18,21 +16,8 @@ const Home = ({ softrEmail }) => {
   }
 
   useEffect(() => {
-    // Verificar se temos o email antes de redirecionar
-    if (softrEmail) {
-      console.log('Home - Email disponível:', softrEmail);
-    } else {
-      console.log('Home - Email não disponível ainda, redirecionando mesmo assim');
-    }
-    
-    // Adicionar um pequeno atraso antes de redirecionar para garantir que o componente montou completamente
-    const redirectTimeout = setTimeout(() => {
-      console.log('Home - Redirecionando para SuggestionFeed');
-      goFeed();
-    }, 100);
-    
-    return () => clearTimeout(redirectTimeout);
-  }, [softrEmail]);
+    goFeed()
+  }, []);
 
   return (
     <div>

@@ -110,119 +110,119 @@ const AtelierForm = ({
     };
 
     return (
-        <div style={{ background: '#fff', borderRadius: 18, width: '100%', height: '100%' }}>
-            <div className={styles.modalContentGrid}>
-                <div className={styles.leftCol} style={{ display: 'none' }} />
-                <div className={styles.divider} />
-                <div className={styles.rightCol} style={{ maxHeight: '80vh', overflowY: 'auto' }}>
-                    <div className={styles.formImageBox}>
-                        <img src={currentForm.imgUrl} alt={`Selecionada ${formIndex + 1}`} className={styles.formImage} />
+        <div className={formstyles.modalContentGrid}>
+            <div className={formstyles.leftCol}>
+                <div className={formstyles.formImageBoxGrid}>
+                    <img src={currentForm.imgUrl} alt={`Selecionada ${formIndex + 1}`} className={formstyles.formImageGrid} />
+                </div>
+                <h4 className={formstyles.title}>Imagem {formIndex + 1} de {forms.length}</h4>
+            </div>
+            <div className={formstyles.divider} />
+            <div className={formstyles.rightCol} style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                <h2 className={styles.formTitle}>RUUM Atelier | Enviar nova imagem</h2>
+                <h6 className={styles.formSubtitle}>Suba imagens na melhor qualidade possível. É preferível sem marca d'água.</h6>
+                <form className={styles.formAreaGrid} onSubmit={e => e.preventDefault()}>
+                    <div className="mb-2">
+                        <label className="form-label">Estilo de ambientação</label>
+                        <select
+                            className={`form-select ${styles.formSelect}`}
+                            value={currentForm.estilo}
+                            onChange={e => handleFormChange('estilo', e.target.value)}
+                            placeholder="Selecione um estilo para ambientação"
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                            {ESTILOS.map((estilo) => (
+                                <option key={estilo} value={estilo}>{estilo}</option>
+                            ))}
+                        </select>
                     </div>
-                    <h4 className={styles.title} style={{ marginTop: '1rem' }}>Imagem {formIndex + 1} de {forms.length}</h4>
-                    <h2 className={styles.formTitle}>RUUM Atelier | Enviar nova imagem</h2>
-                    <h6 className={styles.formSubtitle}>Suba imagens na melhor qualidade possível. É preferível sem marca d'água.</h6>
-                    <form className={styles.formAreaGrid} onSubmit={e => e.preventDefault()}>
-                        <div className="mb-2">
-                            <label className="form-label">Estilo de ambientação</label>
-                            <select
-                                className={`form-select ${styles.formSelect}`}
-                                value={currentForm.estilo}
-                                onChange={e => handleFormChange('estilo', e.target.value)}
-                                placeholder="Selecione um estilo para ambientação"
-                                required
-                            >
-                                <option value="">Selecione...</option>
-                                {ESTILOS.map((estilo) => (
-                                    <option key={estilo} value={estilo}>{estilo}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="mb-2">
-                            <label className="form-label">Tipo de ambiente</label>
-                            <select
-                                className={`form-select ${styles.formSelect}`}
-                                value={currentForm.tipo}
-                                onChange={e => handleFormChange('tipo', e.target.value)}
-                                placeholder="Selecione uso do cômodo para ambientação"
-                                required
-                            >
-                                <option value="">Selecione...</option>
-                                {TIPOS.map((tipo) => (
-                                    <option key={tipo} value={tipo}>{tipo}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="mb-2">
-                            <label className="form-label">RUUM Project - Colocar/alterar acabeneto (Pode acarretar custo adicional. Consulte seu plano).*</label>
-                            <select
-                                className={`form-select ${styles.formSelect}`}
-                                value={currentForm.acabamento}
-                                onChange={e => handleFormChange('acabamento', e.target.value)}
-                                placeholder="Deseja instalar ou alterar acabamentos?"
-                                required
-                            >
-                                <option value="">Selecione...</option>
-                                {ACABAMENTOS.map((acab) => (
-                                    <option key={acab} value={acab}>{acab}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="mb-2">
-                            <label className="form-label">RUUM ReStyle - Retirar mobiliário/decoração existente (Pode acarretar custo adicional. Consulte seu plano).*</label>
-                            <select
-                                className={`form-select ${styles.formSelect}`}
-                                value={currentForm.retirar}
-                                onChange={e => handleFormChange('retirar', e.target.value)}
-                                placeholder="Deseja remover objetos na imagem enviada?"
-                                required
-                            >
-                                <option value="">Selecione...</option>
-                                {RETIRAR.map((ret) => (
-                                    <option key={ret} value={ret}>{ret}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="mb-2">
-                            <label className="form-label">Requisições de clientes</label>
-                            <textarea
-                                className={`form-control ${styles.formSelect}`}
-                                value={currentForm.observacoes}
-                                onChange={e => handleFormChange('observacoes', e.target.value)}
-                                rows={3}
-                                placeholder="Se desejar, indique aqui requisiç!oes pontuais para esta ambientação. De instruções gerais a solicitações específicas."
-                            />
-                        </div>
-                        <div className="mb-2">
-                            <label className="form-label">Imagens de referência</label>
-                            <input
-                                type="text"
-                                className={`form-control ${styles.formSelect}`}
-                                value={currentForm.imagensReferencia || ''}
-                                onChange={e => handleFormChange('imagensReferencia', e.target.value)}
-                                placeholder="Links ou descrições das imagens de referência"
-                            />
-                        </div>
-                        <div className="mb-2">
-                            <label className="form-label">Modelo de vídeo</label>
-                            <select
-                                className={`form-select ${styles.formSelect}`}
-                                value={currentForm.modeloVideo || ''}
-                                onChange={e => handleFormChange('modeloVideo', e.target.value)}
-                                required
-                            >
-                                <option value="">Selecione...</option>
-                                {MODELO_VIDEO.map((modelo) => (
-                                    <option key={modelo} value={modelo}>{modelo}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="mb-2">
-                            <label className="form-label">Formato/proporção do vídeo</label>
-                            <select
-                                className={`form-select ${styles.formSelect}`}
-                                value={currentForm.formatoVideo || ''}
-                                onChange={e => handleFormChange('formatoVideo', e.target.value)}
-                                required
+                    <div className="mb-2">
+                        <label className="form-label">Tipo de ambiente</label>
+                        <select
+                            className={`form-select ${styles.formSelect}`}
+                            value={currentForm.tipo}
+                            onChange={e => handleFormChange('tipo', e.target.value)}
+                            placeholder="Selecione uso do cômodo para ambientação"
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                            {TIPOS.map((tipo) => (
+                                <option key={tipo} value={tipo}>{tipo}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="mb-2">
+                        <label className="form-label">RUUM Project - Colocar/alterar acabeneto (Pode acarretar custo adicional. Consulte seu plano).*</label>
+                        <select
+                            className={`form-select ${styles.formSelect}`}
+                            value={currentForm.acabamento}
+                            onChange={e => handleFormChange('acabamento', e.target.value)}
+                            placeholder="Deseja instalar ou alterar acabamentos?"
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                            {ACABAMENTOS.map((acab) => (
+                                <option key={acab} value={acab}>{acab}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="mb-2">
+                        <label className="form-label">RUUM ReStyle - Retirar mobiliário/decoração existente (Pode acarretar custo adicional. Consulte seu plano).*</label>
+                        <select
+                            className={`form-select ${styles.formSelect}`}
+                            value={currentForm.retirar}
+                            onChange={e => handleFormChange('retirar', e.target.value)}
+                            placeholder="Deseja remover objetos na imagem enviada?"
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                            {RETIRAR.map((ret) => (
+                                <option key={ret} value={ret}>{ret}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="mb-2">
+                        <label className="form-label">Requisições de clientes</label>
+                        <textarea
+                            className={`form-control ${styles.formSelect}`}
+                            value={currentForm.observacoes}
+                            onChange={e => handleFormChange('observacoes', e.target.value)}
+                            rows={3}
+                            placeholder="Se desejar, indique aqui requisiç!oes pontuais para esta ambientação. De instruções gerais a solicitações específicas."
+                        />
+                    </div>
+                    <div className="mb-2">
+                        <label className="form-label">Imagens de referência</label>
+                        <input
+                            type="text"
+                            className={`form-control ${styles.formSelect}`}
+                            value={currentForm.imagensReferencia || ''}
+                            onChange={e => handleFormChange('imagensReferencia', e.target.value)}
+                            placeholder="Links ou descrições das imagens de referência"
+                        />
+                    </div>
+                    <div className="mb-2">
+                        <label className="form-label">Modelo de vídeo</label>
+                        <select
+                            className={`form-select ${styles.formSelect}`}
+                            value={currentForm.modeloVideo || ''}
+                            onChange={e => handleFormChange('modeloVideo', e.target.value)}
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                            {MODELO_VIDEO.map((modelo) => (
+                                <option key={modelo} value={modelo}>{modelo}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="mb-2">
+                        <label className="form-label">Formato/proporção do vídeo</label>
+                        <select
+                            className={`form-select ${styles.formSelect}`}
+                            value={currentForm.formatoVideo || ''}
+                            onChange={e => handleFormChange('formatoVideo', e.target.value)}
+                            required
                             >
                                 <option value="">Selecione...</option>
                                 {FORMATOS_VIDEO.map((formato) => (
@@ -230,25 +230,25 @@ const AtelierForm = ({
                                 ))}
                             </select>
                         </div>
-                        <div className="mb-2">
-                            <label className="form-label text-start">Código interno no imóvel na sua imobiliária</label>
-                            <input
-                                type="text"
-                                className={`form-control ${styles.formSelect}`}
-                                value={codigoInterno}
-                                readOnly
-                            />
-                        </div>
-                        <div className="mb-2">
-                            <label className="form-label text-start">Link da página do imóvel</label>
-                            <input
-                                type="text"
-                                className={`form-control ${styles.formSelect}`}
-                                value={linkPaginaImovel}
-                                readOnly
-                            />
-                        </div>
-                        <div className={styles.formNavGrid} style={{ marginTop: '2.2rem', padding: '0 1.2rem 1.2rem 1.2rem' }}>
+                    <div className="mb-2">
+                        <label className="form-label text-start">Código interno no imóvel na sua imobiliária</label>
+                        <input
+                            type="text"
+                            className={`form-control ${styles.formSelect}`}
+                            value={codigoInterno}
+                            readOnly
+                        />
+                    </div>
+                    <div className="mb-2">
+                        <label className="form-label text-start">Link da página do imóvel</label>
+                        <input
+                            type="text"
+                            className={`form-control ${styles.formSelect}`}
+                            value={linkPaginaImovel}
+                            readOnly
+                        />
+                    </div>
+                    <div className={styles.formNavGrid} style={{ marginTop: '2.2rem', padding: '0 1.2rem 1.2rem 1.2rem' }}>
                             <button
                                 type="button"
                                 className="btn"
@@ -325,7 +325,7 @@ const AtelierForm = ({
                     )}
                 </div>
             </div>
-        </div>
+        
     );
 }
 

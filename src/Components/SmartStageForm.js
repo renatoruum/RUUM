@@ -99,7 +99,7 @@ const SmartStageForm = ({
                 <h4 className={styles.title}>Imagem {formIndex + 1} de {forms.length}</h4>
             </div>
             <div className={styles.divider} />
-            <div className={styles.rightCol}>
+            <div className={styles.rightCol} style={{ maxHeight: '80vh', overflowY: 'auto' }}>
                 <h2 className={styles.formTitle}>Smart Stage | Enviar nova imagem</h2>
                 <h6 className={styles.formSubtitle}>
                     Preencha o formulário para enviar nova imagem para processamento. Quanto melhor a qualidade da imagem enviada, melhor o resultado final ;)

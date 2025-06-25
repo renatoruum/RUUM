@@ -1,0 +1,375 @@
+.selectorWrapper {
+  position: relative;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(44, 62, 80, 0.10);
+  padding: 1.5rem 1rem 2rem 1rem;
+  max-width: 480px;
+  margin: 2rem auto;
+  min-width: 0;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+}
+
+.title {
+  font-size: 1rem;
+  margin-top: 2.5rem;
+  color: #1a2233;
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.imagesGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.imageBox {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px 0 rgba(44, 62, 80, 0.10);
+}
+
+.imageBox:focus {
+  outline: 2px solid #007bff;
+}
+
+.image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+  transition: filter 0.2s;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px 0 rgba(44, 62, 80, 0.10);
+}
+
+.selected {
+  border: 2.5px solid #007bff;
+  box-shadow: 0 4px 16px rgba(0, 123, 255, 0.10);
+}
+
+.checkOverlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 123, 255, 0.85);
+  color: #fff;
+  border-radius: 50%;
+  padding: 0.3em 0.4em;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Formulário */
+.formImageBox {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.2rem;
+}
+
+.formImage {
+  width: 100%;
+  max-width: 320px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+  max-height: 400px;
+  min-height: 280px;
+}
+
+.formArea {
+  margin-top: 0.5rem;
+}
+
+.formNav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+.zoomModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 34, 45, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.zoomImg {
+  max-width: 90vw;
+  max-height: 80vh;
+  border-radius: 12px;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.25);
+  background: #fff;
+}
+
+.closeZoom {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 2.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1001;
+  line-height: 1;
+}
+
+.checkBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  z-index: 2;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.15s;
+}
+
+.checkBtn:active {
+  transform: scale(0.95);
+}
+
+.imageBox {
+  position: relative;
+}
+
+.selected {
+  border: 2.5px solid #68bf6c;
+  box-shadow: 0 4px 16px rgba(104, 191, 108, 0.10);
+}
+
+.modalContentGrid {
+  display: flex;
+  height: 100%;
+  min-height: 480px;
+  width: 100%;
+  align-items: center;
+  position: relative;
+  gap: 0;
+}
+
+.leftCol,
+.rightCol {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  height: 100%;
+  min-height: 400px;
+  padding: 7% 5% 5% 5%;
+}
+
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+  min-height: 400px;
+  padding: 5% 5% 5% 2%;
+  position: relative;
+}
+
+.divider {
+  grid-row: 1 / span 1;
+  grid-column: 2 / span 1;
+  justify-self: center;
+  align-self: center;
+  width: 2px;
+  height: 80%;
+  background: linear-gradient(to bottom, #e6eaf0 10%, #cfd8dc 90%);
+  border-radius: 2px;
+  opacity: 0.5;
+  margin: 0 0.5rem;
+}
+
+.imageColContent {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.formImageBoxGrid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 320px;
+  width: 100%;
+}
+
+.formImageGrid {
+  max-height: 400px;
+  min-height: 280px;
+  height: auto;
+  width: 100%;
+  object-fit: contain;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px 0 rgba(44, 62, 80, 0.10);
+}
+
+.formTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a2233;
+  margin-bottom: 0.7rem;
+  text-align: left;
+}
+
+.formSubtitle {
+  font-size: 1rem;
+  color: #34495e;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.formAreaGrid {
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.formNavGrid {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+.formSelect {
+  background-color: #eff1f9;
+  border: none;
+  padding: .5em;
+}
+
+.submitButton {
+  background-color: #69c66c;
+  color: black;
+  font-weight: bold;
+  border: none;
+}
+
+.submitButton:hover {
+  background-color: #5ab05a;
+  color: black;
+  font-weight: bold;
+}
+
+
+/* Responsivo */
+@media (max-width: 900px) {
+  .modalContentGrid {
+    flex-direction: column;
+    grid-template-columns: none !important;
+    min-height: 0;
+    height: auto;
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .leftCol,
+  .rightCol {
+    padding: 2rem 1rem;
+    min-height: unset;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .leftCol {
+    order: 1;
+  }
+
+  .rightCol {
+    order: 2;
+  }
+
+  .formImageBox,
+  .formImageBoxGrid {
+    height: 200px;
+  }
+
+  .formImage,
+  .formImageGrid {
+    height: 140px;
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 600px) {
+  .selectorWrapper {
+    padding: 2rem 2rem 2.5rem 2rem;
+    max-width: 600px;
+  }
+
+  .imagesGrid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .image {
+    height: 140px;
+  }
+
+  .formImage {
+    height: 200px;
+    max-width: 400px;
+  }
+}
+
+@media (min-width: 900px) {
+  .selectorWrapper {
+    max-width: 700px;
+    padding: 2.5rem 3rem 3rem 3rem;
+  }
+
+  .imagesGrid {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+  }
+
+  .image {
+    height: 160px;
+  }
+
+  .formImage {
+    height: 240px;
+    max-width: 520px;
+  }
+}
