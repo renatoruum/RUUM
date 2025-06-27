@@ -23,7 +23,7 @@ const VideoForm = ({
     const [isopen, setIsOpen] = useState(false);
 
     const imgQty = forms.length;
-    const credits = imgQty * 100;
+    const credits = imgQty * 200;
     const selectedIndex = selectedIndexes[formIndex];
 
     const actionScript = (act) => {
@@ -85,13 +85,17 @@ const VideoForm = ({
     ];
 
     const FORMATOS_VIDEO = [
-        'Horizontal (Web - Portal de Vendas, Youtube)',
-        'Vertical (Social - Stories, Reels e WhatsApp)'
+        'Horizontal ↔️ (Web - Portal de vendas , YouTube)',
+        'Vertical ↕️ (Social - Stories, Reels e WhatsApp)'
     ];
     
     const handleEnviarClick = () => {
         handleSubmit();
     };
+
+    useEffect(() => {
+        handleFormChange('imgWorkflow', "MagicMotion");
+    }, [])
 
     return (
         <div className={styles.modalContentGrid}>

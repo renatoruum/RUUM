@@ -7,7 +7,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import styles from './ImageSelector.module.css';
 import Confetti from 'react-confetti';
 
-const ImageSelector = ({ property, closeImageSelector }) => {
+const ImageSelector = ({ property, client, closeImageSelector }) => {
   const [images, setImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [step, setStep] = useState('select');
@@ -55,7 +55,11 @@ const ImageSelector = ({ property, closeImageSelector }) => {
         tipo: '',
         acabamento: '',
         retirar: '',
-        observacoes: ''
+        observacoes: '',
+        imagensReferencia: '',
+        modeloVideo: '',
+        formatoVideo: '',
+        imgWorkflow: ''
       }))
     );
     setStep('form');
@@ -82,10 +86,40 @@ const ImageSelector = ({ property, closeImageSelector }) => {
   const handleSubmit = () => {
     console.log('Enviando formulários:', forms);
     setSaving(true);
-    fetch("https://6a93-191-205-248-153.ngrok-free.app/api/update-images-airtable", {
+    const imagesArray = forms.map(form => {
+      return {
+        imgUrl: form.imgUrl,
+        tipo: form.tipo,         // Room Type
+        retirar: form.retirar,   // Decluttering
+        codigo: property?.fields?.Codigo || '',  // Client Internal Code
+        propertyUrl: property?.fields?.URL_Portal || '', // Property's URL
+        observacoes: form.observacoes, // Observations
+        estilo: form.estilo,     // Style
+        acabamento: form.acabamento, // Finish
+        imagensReferencia: form.imagensReferencia, // Reference Images
+        modeloVideo: form.modeloVideo, // Video Model
+        formatoVideo: form.formatoVideo, // Video Format
+        imgWorkflow: form.imgWorkflow
+        // Todos os campos adicionais do backend já estão definidos lá, não precisamos enviar
+      };
+    });
+
+    // Objeto para envio ao backend
+    const requestData = {
+      imagesArray: imagesArray,
+      // Enviamos os parâmetros, mas o backend já tem valores padrão
+      email: client?.Email,
+      clientId: client?.ClientId,
+      invoiceId: client?.InvoiceId,
+      userId: client?.UserId
+    };
+
+    console.log('Enviando dados para o backend:', requestData);
+
+    fetch("https://59ea-191-205-248-153.ngrok-free.app/api/update-images-airtable", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(forms)
+      body: JSON.stringify(requestData)
     })
       .then(res => res.json())
       .then(data => {

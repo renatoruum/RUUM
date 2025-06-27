@@ -67,6 +67,10 @@ const SmartStageForm = ({
     }
 
     useEffect(() => {
+        handleFormChange('imgWorkflow', "SmartStage");
+    }, [])
+
+    useEffect(() => {
         if (codigoInterno) {
             handleFormChange('codigo', codigoInterno);
         }

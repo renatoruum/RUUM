@@ -47,6 +47,11 @@ const AtelierForm = ({
         }
         // eslint-disable-next-line
     }, [codigoInterno, linkPaginaImovel, formIndex]);
+
+    useEffect(() => {
+        handleFormChange('imgWorkflow', "Atelier");
+    }, [])
+
     const ESTILOS = [
         'Clássico Atualizado',
         'Elegância Descontraída',
@@ -82,8 +87,8 @@ const AtelierForm = ({
         'C - Câmera mágica + Antes e depois',
     ];
     const FORMATOS_VIDEO = [
-        'Horizontal (Web - Portal de Vendas, Youtube)',
-        'Vertical (Social - Stories, Reels e WhatsApp)'
+        'Horizontal ↔️ (Web - Portal de vendas , YouTube)',
+        'Vertical ↕️ (Social - Stories, Reels e WhatsApp)'
     ]
 
     // --- SmartStage style/modal logic ---
@@ -91,7 +96,7 @@ const AtelierForm = ({
     const [action, setAction] = useState('');
     const [questionDialog, setQuestionDialog] = useState('');
     const imgQty = forms.length;
-    const credits = imgQty * 100;
+    const credits = imgQty * 300;
     const actionScript = (act) => {
         setOpenDialogBox(false);
         setAction("");
