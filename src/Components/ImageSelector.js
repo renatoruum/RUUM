@@ -6,8 +6,10 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import styles from './ImageSelector.module.css';
 import Confetti from 'react-confetti';
+import { apiCall } from '../Config/Config';
 
 const ImageSelector = ({ property, client, closeImageSelector }) => {
+  console.log("Client infos:", client);
   const [images, setImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [step, setStep] = useState('select');
@@ -100,7 +102,7 @@ const ImageSelector = ({ property, client, closeImageSelector }) => {
         modeloVideo: form.modeloVideo, // Video Model
         formatoVideo: form.formatoVideo, // Video Format
         imgWorkflow: form.imgWorkflow
-        // Todos os campos adicionais do backend já estão definidos lá, não precisamos enviar
+
       };
     });
 
@@ -116,12 +118,10 @@ const ImageSelector = ({ property, client, closeImageSelector }) => {
 
     console.log('Enviando dados para o backend:', requestData);
 
-    fetch("https://59ea-191-205-248-153.ngrok-free.app/api/update-images-airtable", {
+    apiCall("/api/update-images-airtable", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestData)
     })
-      .then(res => res.json())
       .then(data => {
         setSaving(false);
         if (data) {
@@ -129,7 +129,7 @@ const ImageSelector = ({ property, client, closeImageSelector }) => {
           setTimeout(() => {
             setShowConfetti(false);
             closeImageSelector();
-          }, 4000); // Mostra o confete por 2.2 segundos
+          }, 4000);
         } else {
           alert('Erro ao enviar formulários. Tente novamente.');
         }
@@ -141,6 +141,32 @@ const ImageSelector = ({ property, client, closeImageSelector }) => {
       });
   };
 
+  /*
+      fetch("https://59ea-191-205-248-153.ngrok-free.app/api/update-images-airtable", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData)
+      })
+        .then(res => res.json())
+        .then(data => {
+          setSaving(false);
+          if (data) {
+            setShowConfetti(true);
+            setTimeout(() => {
+              setShowConfetti(false);
+              closeImageSelector();
+            }, 4000); // Mostra o confete por 2.2 segundos
+          } else {
+            alert('Erro ao enviar formulários. Tente novamente.');
+          }
+        })
+        .catch(err => {
+          setSaving(false);
+          console.error(err);
+          alert('Erro ao enviar formulários. Tente novamente.');
+        });
+    };
+  */
   // Overlay para spinner e confete
   const Overlay = ({ children }) => (
     <div style={{
@@ -240,14 +266,14 @@ const ImageSelector = ({ property, client, closeImageSelector }) => {
             type="button"
             className="btn mt-5"
             style={{
-                backgroundColor: '#68bf6c',
-                color: '#fff',
-                border: 'none',
-                fontWeight: 600,
-                fontSize: '1.1em',
-                padding: '0.7em 2.2em',
-                borderRadius: '8px',
-                boxShadow: '0 2px 8px rgba(104,191,108,0.10)'
+              backgroundColor: '#68bf6c',
+              color: '#fff',
+              border: 'none',
+              fontWeight: 600,
+              fontSize: '1.1em',
+              padding: '0.7em 2.2em',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(104,191,108,0.10)'
             }}
             onClick={handleConfirmSelection}
             disabled={selectedImages.length === 0}

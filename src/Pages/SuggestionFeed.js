@@ -14,7 +14,8 @@ import Airtable from 'airtable';
 //Constants
 import { PAGE_SIZE } from '../constants';
 
-const SuggestionFeed = () => {
+const SuggestionFeed = ({ softrEmail }) => {
+
   const [records, setRecords] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [showPropertysList, setShowPropertysList] = useState(true);
@@ -25,86 +26,109 @@ const SuggestionFeed = () => {
   const [itemsToShow, setItemsToShow] = useState(PAGE_SIZE);
   const { clientPlan, setClientPlan } = useClientPlan();
   const [clientName, setClientName] = useState("Acasa7 Inteligência Imobiliária");
+  const [baseTable, setBaseTable] = useState("");
+  const [clientInfos, setClientInfos] = useState({
+    Email: "",
+    ClientId: "",
+    InvoiceId: "",
+    UserId: "",
+  });
 
-  const client = {
-     Email: "galia@acasa7.com.br",
-     ClientId: "recZqOfnZXwqbbVZY",
-     InvoiceId: "reclDmUiMoLKzRe8k",
-     UserId: "recMjeDtB77Ijl9BL",
+  var client = {
+    Email: "galia@acasa7.com.br",
+    ClientId: "recZqOfnZXwqbbVZY",
+    InvoiceId: "reclDmUiMoLKzRe8k",
+    UserId: "recMjeDtB77Ijl9BL",
   }
 
   // Função para buscar o plano do cliente pelo nome
-  const getClientPlan = async (clientname) => {
-    Airtable.configure({
-      apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
-    });
-    const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
-
-    console.log('Buscando plano do cliente:', clientname);
-
-    try {
-      const records = await base('Clients')
-        .select({
-          filterByFormula: `{Client Name} = "${clientname}"`,
-          maxRecords: 1,
-        })
-        .firstPage();
-
-      if (records.length > 0) {
-        return records[0].fields.Ruum_plan || null;
-      } else {
-        return null;
-      }
-    } catch (error) {
-      console.error('Erro ao buscar plano do cliente:', error);
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    getClientPlan("Acasa7 Inteligência Imobiliária").then(plan => {
-      setClientPlan(plan);
-      if (plan) {
-        console.log("Plano do cliente:", plan);
-      }
-    });
-  }, []);
-
-  // Fetch all records on mount
-  useEffect(() => {
+  const getClientTable = async (email) => {
     setLoading(true);
     Airtable.configure({
       apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
     });
     const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
 
-    let allRecords = [];
-    base('ACasa7').select({ view: "Grid view" }).eachPage(
-      function page(records, fetchNextPage) {
-        allRecords = allRecords.concat(records);
-        fetchNextPage();
-      },
-      function done(err) {
-        setLoading(false);
-        if (err) {
-          console.error('Error fetching records:', err);
-          return;
-        }
-        
-        // Debug dos records recebidos
-        console.log('SuggestionFeed - Total de records recebidos:', allRecords.length);
-        
-        if (allRecords.length > 0) {
-          console.log('SuggestionFeed - Amostra do primeiro record:', allRecords[0]);
-          console.log('SuggestionFeed - Tipo do primeiro record:', typeof allRecords[0]);
-          console.log('SuggestionFeed - É um objeto Airtable Record?', typeof allRecords[0]?.get === 'function');
-          console.log('SuggestionFeed - Tem fields?', !!allRecords[0]?.fields);
-        }
-        
-        setRecords(allRecords);
+    console.log('Buscando tabela do cliente:', email);
+
+    try {
+      const records = await base('Clients')
+        .select({
+          filterByFormula: `{Chave} = "${email}"`,
+          maxRecords: 1,
+        })
+        .firstPage();
+
+      if (records.length > 0) {
+        const clientData = records[0].fields;
+        return {
+          BaseCRM: clientData.BaseCRM || null,
+          Calculation: clientData.Calculation || null,
+          InvoiceId: clientData.InvoiceId || null,
+          UserId: clientData.UserId || null,
+        };
+      } else {
+        return null;
       }
-    );
-  }, []);
+    } catch (error) {
+      console.error('Erro ao buscar tabela do cliente:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    var emailbase
+    if (!softrEmail) {
+      emailbase = "galia@acasa7.com.br"
+    } else {
+      emailbase = softrEmail;
+    }
+    getClientTable(emailbase).then(infos => {
+      if (infos) {
+        setBaseTable(infos.BaseCRM);
+
+        setClientInfos({
+          Email: emailbase,
+          ClientId: infos.Calculation,
+          InvoiceId: infos.InvoiceId,
+          UserId: infos.UserId,
+        });
+      }
+    });
+  }, [softrEmail]);
+
+  useEffect(() => {
+    if (clientInfos) { 
+      console.log('Client Infos:', clientInfos);
+    }
+  }, [clientInfos])
+
+  // Fetch all records on mount
+  useEffect(() => {
+    if (baseTable) {
+      Airtable.configure({
+        apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
+      });
+      const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
+
+      let allRecords = [];
+      base(baseTable).select({ view: "Grid view" }).eachPage(
+        function page(records, fetchNextPage) {
+          allRecords = allRecords.concat(records);
+          fetchNextPage();
+        },
+        function done(err) {
+          setLoading(false);
+          if (err) {
+            console.error('Error fetching records:', err);
+            return;
+          }
+
+          setRecords(allRecords);
+        }
+      );
+    }
+  }, [baseTable]);
 
   // Paginação
   const totalPages = Math.ceil(records.length / PAGE_SIZE);
@@ -152,11 +176,11 @@ const SuggestionFeed = () => {
           {showImageSelector && (
             <ImageSelector
               property={selectedProperty}
-              client={client}
+              client={clientInfos}
               closeImageSelector={closeImageSelector}
             />
           )}
-          
+
         </div>
       </div>
     </div>
