@@ -34,14 +34,12 @@ function App() {
     
     // Verificar se estamos em um iframe
     const isInIframe = window.self !== window.top;
-    console.log('Estamos em um iframe?', isInIframe);
     
     // Se estamos em um iframe, requisitar o email para o parent (Softr)
     // Usar um pequeno atraso para garantir que o parent está pronto
     if (isInIframe) {
       setTimeout(() => {
         try {
-          console.log('Solicitando email ao parent frame (Softr)');
           window.parent.postMessage({ type: 'REQUEST_EMAIL' }, '*');
         } catch (e) {
           console.error('Erro ao solicitar email do parent:', e);
@@ -53,7 +51,6 @@ function App() {
     if (window.location.hash && window.location.hash.includes('@')) {
       const hashValue = window.location.hash.substring(1);
       if (hashValue.includes('@')) {
-        console.log('Email encontrado na URL (hash):', hashValue);
         setSoftrEmail(hashValue);
       }
     }
@@ -62,7 +59,6 @@ function App() {
       const urlParams = new URLSearchParams(window.location.search);
       const emailFromQuery = urlParams.get('email');
       if (emailFromQuery && emailFromQuery.includes('@')) {
-        console.log('Email encontrado na URL (query):', emailFromQuery);
         setSoftrEmail(emailFromQuery);
       }
     }

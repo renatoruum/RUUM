@@ -24,9 +24,12 @@ const SuggestionFeed = ({ softrEmail }) => {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsToShow, setItemsToShow] = useState(PAGE_SIZE);
-  const { clientPlan, setClientPlan } = useClientPlan();
-  const [clientName, setClientName] = useState("Acasa7 Inteligência Imobiliária");
+  const {clientPlan, setClientPlan } = useClientPlan();
+  const [clientId, setClientId] = useState("");
+  const [clientName, setClientName] = useState("");
   const [baseTable, setBaseTable] = useState("");
+  const [userId, setUserId] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
   const [clientInfos, setClientInfos] = useState({
     Email: "",
     ClientId: "",
@@ -41,31 +44,61 @@ const SuggestionFeed = ({ softrEmail }) => {
     UserId: "recMjeDtB77Ijl9BL",
   }
 
-  // Função para buscar o plano do cliente pelo nome
-  const getClientTable = async (email) => {
+  const getUserTable = async (email) => {
     setLoading(true);
     Airtable.configure({
       apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
     });
     const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
 
-    console.log('Buscando tabela do cliente:', email);
+    console.log('Buscando tabela do usuário:', email);
+
+    try {
+      const records = await base('Users')
+        .select({
+          filterByFormula: `{Email} = "${email}"`,
+          maxRecords: 1,
+        })
+        .firstPage();
+
+      if (records.length > 0) {
+        const userData = records[0].fields;
+        return userData;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error('Erro ao buscar tabela do usuário:', error);
+      return null;
+    }
+  }
+
+  // Função para buscar o plano do cliente pelo nome
+  const getClientTable = async (clientid) => {
+    setLoading(true);
+    Airtable.configure({
+      apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
+    });
+    const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
+
+    console.log('Buscando tabela do cliente:', clientid);
 
     try {
       const records = await base('Clients')
         .select({
-          filterByFormula: `{Chave} = "${email}"`,
+          filterByFormula: `{Calculation} = "${clientid}"`,
           maxRecords: 1,
         })
         .firstPage();
 
       if (records.length > 0) {
         const clientData = records[0].fields;
+        setClientName(clientData['Client Name'] || "");
         return {
           BaseCRM: clientData.BaseCRM || null,
           Calculation: clientData.Calculation || null,
           InvoiceId: clientData.InvoiceId || null,
-          UserId: clientData.UserId || null,
+          UserId: clientId || null,
         };
       } else {
         return null;
@@ -79,26 +112,47 @@ const SuggestionFeed = ({ softrEmail }) => {
   useEffect(() => {
     var emailbase
     if (!softrEmail) {
-      emailbase = "galia@acasa7.com.br"
+      emailbase = "joel@krolowimoveis.com.br"
     } else {
       emailbase = softrEmail;
     }
-    getClientTable(emailbase).then(infos => {
-      if (infos) {
-        setBaseTable(infos.BaseCRM);
-
-        setClientInfos({
-          Email: emailbase,
-          ClientId: infos.Calculation,
-          InvoiceId: infos.InvoiceId,
-          UserId: infos.UserId,
-        });
+    setClientEmail(emailbase);
+    getUserTable(emailbase).then(user => {
+      if (user) {
+        console.log('User Data:', user);
+        setUserId(user['Record ID']);
+        setClientId(user.Client);
       }
-    });
+    })
+
   }, [softrEmail]);
 
   useEffect(() => {
-    if (clientInfos) { 
+    console.log('Client Id:', clientId);
+    if (clientId) {
+      getClientTable(clientId[0]).then(infos => {
+        if (infos) {
+          setBaseTable(infos.BaseCRM);
+
+          setClientInfos({
+            Email: clientEmail,
+            ClientId: infos.Calculation,
+            InvoiceId: infos.InvoiceId,
+            UserId: userId
+          });
+        }
+      });
+    }
+  }, [clientId])
+
+  useEffect(() => {
+    if (clientName) {
+      console.log('Client Name changed:', clientName[0]);
+    }
+  }, [clientName])
+
+  useEffect(() => {
+    if (clientInfos) {
       console.log('Client Infos:', clientInfos);
     }
   }, [clientInfos])

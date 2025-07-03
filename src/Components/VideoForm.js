@@ -95,7 +95,7 @@ const VideoForm = ({
 
     useEffect(() => {
         handleFormChange('imgWorkflow', "MagicMotion");
-    }, [])
+    }, [formIndex]) // Executa sempre que muda de formulário
 
     return (
         <div className={styles.modalContentGrid}>

@@ -19,6 +19,7 @@ const ImageSelector = ({ property, client, closeImageSelector }) => {
   const [saving, setSaving] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, message: '' });
 
   const { clientPlan } = useClientPlan();
 
@@ -85,10 +86,13 @@ const ImageSelector = ({ property, client, closeImageSelector }) => {
     if (formIndex > 0) setFormIndex(formIndex - 1);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     console.log('Enviando formulários:', forms);
+    console.log('Número de formulários:', forms.length);
     setSaving(true);
-    const imagesArray = forms.map(form => {
+    
+    const imagesArray = forms.map((form, index) => {
+      console.log(`Processando formulário ${index + 1}:`, form);
       return {
         imgUrl: form.imgUrl,
         tipo: form.tipo,         // Room Type
@@ -102,9 +106,11 @@ const ImageSelector = ({ property, client, closeImageSelector }) => {
         modeloVideo: form.modeloVideo, // Video Model
         formatoVideo: form.formatoVideo, // Video Format
         imgWorkflow: form.imgWorkflow
-
       };
     });
+
+    console.log('ImagesArray final:', imagesArray);
+    console.log('Quantidade de imagens no array:', imagesArray.length);
 
     // Objeto para envio ao backend
     const requestData = {
@@ -117,28 +123,152 @@ const ImageSelector = ({ property, client, closeImageSelector }) => {
     };
 
     console.log('Enviando dados para o backend:', requestData);
+    console.log('Tamanho do payload:', JSON.stringify(requestData).length, 'bytes');
 
-    apiCall("/api/update-images-airtable", {
-      method: "POST",
-      body: JSON.stringify(requestData)
-    })
-      .then(data => {
-        setSaving(false);
-        if (data) {
-          setShowConfetti(true);
-          setTimeout(() => {
-            setShowConfetti(false);
-            closeImageSelector();
-          }, 4000);
-        } else {
-          alert('Erro ao enviar formulários. Tente novamente.');
-        }
-      })
-      .catch(err => {
-        setSaving(false);
-        console.error(err);
-        alert('Erro ao enviar formulários. Tente novamente.');
+    try {
+      const data = await apiCall("/api/update-images-airtable", {
+        method: "POST",
+        body: JSON.stringify(requestData)
       });
+      
+      console.log('Resposta do backend:', data);
+      setSaving(false);
+      if (data) {
+        setShowConfetti(true);
+        setTimeout(() => {
+          setShowConfetti(false);
+          closeImageSelector();
+        }, 4000);
+      } else {
+        alert('Erro ao enviar formulários. Tente novamente.');
+      }
+    } catch (err) {
+      setSaving(false);
+      console.error('Erro detalhado:', err);
+      console.error('RequestData que causou o erro:', requestData);
+      console.error('Número de imagens no requestData:', requestData.imagesArray.length);
+      
+      // Tentar identificar qual imagem pode estar causando o problema
+      if (requestData.imagesArray.length > 1) {
+        console.log('Tentando enviar uma imagem por vez para identificar o problema...');
+        
+        setUploadProgress({ current: 0, total: requestData.imagesArray.length, message: 'Enviando imagens individualmente...' });
+        
+        const results = [];
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (let i = 0; i < requestData.imagesArray.length; i++) {
+          try {
+            setUploadProgress({ 
+              current: i + 1, 
+              total: requestData.imagesArray.length, 
+              message: `Enviando imagem ${i + 1} de ${requestData.imagesArray.length}...` 
+            });
+            
+            const singleImageData = {
+              ...requestData,
+              imagesArray: [requestData.imagesArray[i]]
+            };
+            
+            console.log(`Enviando imagem ${i + 1} de ${requestData.imagesArray.length}:`, singleImageData);
+            
+            const singleResult = await apiCall("/api/update-images-airtable", {
+              method: "POST",
+              body: JSON.stringify(singleImageData)
+            });
+            
+            console.log(`Imagem ${i + 1} enviada com sucesso:`, singleResult);
+            results.push({ index: i, success: true, data: singleResult });
+            successCount++;
+            
+            // Pequeno delay entre as requisições para evitar sobrecarga
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Aumentado para 2 segundos
+            
+          } catch (singleErr) {
+            console.error(`Erro na imagem ${i + 1}:`, singleErr);
+            results.push({ index: i, success: false, error: singleErr.message });
+            errorCount++;
+          }
+        }
+        
+        console.log('Resultados do envio individual:', results);
+        
+        // Tentar reenviar imagens que falharam
+        const failedImages = results.filter(r => !r.success);
+        if (failedImages.length > 0 && successCount > 0) {
+          console.log(`Tentando reenviar ${failedImages.length} imagem(ns) que falharam...`);
+          
+          setUploadProgress({ 
+            current: 0, 
+            total: failedImages.length, 
+            message: 'Reenviando imagens que falharam...' 
+          });
+          
+          for (let j = 0; j < failedImages.length; j++) {
+            const failed = failedImages[j];
+            try {
+              setUploadProgress({ 
+                current: j + 1, 
+                total: failedImages.length, 
+                message: `Reenviando imagem ${failed.index + 1}... (${j + 1}/${failedImages.length})` 
+              });
+              
+              console.log(`Reenviando imagem ${failed.index + 1}...`);
+              
+              const retryImageData = {
+                ...requestData,
+                imagesArray: [requestData.imagesArray[failed.index]]
+              };
+              
+              const retryResult = await apiCall("/api/update-images-airtable", {
+                method: "POST",
+                body: JSON.stringify(retryImageData)
+              });
+              
+              console.log(`Imagem ${failed.index + 1} reenviada com sucesso:`, retryResult);
+              
+              // Atualizar o resultado
+              const resultIndex = results.findIndex(r => r.index === failed.index);
+              results[resultIndex] = { index: failed.index, success: true, data: retryResult };
+              successCount++;
+              errorCount--;
+              
+              // Delay maior para retry
+              await new Promise(resolve => setTimeout(resolve, 3000));
+              
+            } catch (retryErr) {
+              console.error(`Erro no reenvio da imagem ${failed.index + 1}:`, retryErr);
+            }
+          }
+        }
+        
+        setUploadProgress({ current: 0, total: 0, message: '' });
+        
+        console.log('Resultados finais após tentativas:', results);
+        
+        if (successCount > 0) {
+          const message = errorCount === 0 
+            ? `Todas as ${successCount} imagem(ns) foram salvas com sucesso!` 
+            : `${successCount} imagem(ns) foram salvas com sucesso. ${errorCount} falharam. Verifique o console para detalhes.`;
+          
+          alert(message);
+          
+          if (errorCount === 0) {
+            // Todas foram salvas com sucesso
+            setShowConfetti(true);
+            setTimeout(() => {
+              setShowConfetti(false);
+              closeImageSelector();
+            }, 4000);
+          }
+        } else {
+          alert('Nenhuma imagem foi salva com sucesso. Verifique o console para detalhes.');
+        }
+      } else {
+        alert('Erro ao enviar formulários: ' + err.message);
+      }
+    }
   };
 
   /*
@@ -335,8 +465,13 @@ const ImageSelector = ({ property, client, closeImageSelector }) => {
               boxShadow: '0 0 16px 2px #fff8'
             }} />
             <div style={{ marginTop: '.5rem', textAlign: 'center', color: '#fff', fontWeight: 'bold', textShadow: '0 2px 8px #000a' }}>
-              Salvando imagens
+              {uploadProgress.message || 'Salvando imagens'}
             </div>
+            {uploadProgress.total > 0 && (
+              <div style={{ marginTop: '1rem', textAlign: 'center', color: '#fff', fontSize: '0.9em' }}>
+                {uploadProgress.current} de {uploadProgress.total} imagens processadas
+              </div>
+            )}
             <style>
               {`
               @keyframes spin {

@@ -68,7 +68,7 @@ const SmartStageForm = ({
 
     useEffect(() => {
         handleFormChange('imgWorkflow', "SmartStage");
-    }, [])
+    }, [formIndex]) // Executa sempre que muda de formulário
 
     useEffect(() => {
         if (codigoInterno) {
@@ -84,7 +84,7 @@ const SmartStageForm = ({
         'Sala de estar/jantar',
         'Quarto',
         'Quarto infantil',
-        'Home office',
+        'Home Office',
         'Área externa'
     ];
 

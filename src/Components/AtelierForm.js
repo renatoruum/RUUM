@@ -50,7 +50,7 @@ const AtelierForm = ({
 
     useEffect(() => {
         handleFormChange('imgWorkflow', "Atelier");
-    }, [])
+    }, [formIndex]) // Executa sempre que muda de formulário
 
     const ESTILOS = [
         'Clássico Atualizado',
