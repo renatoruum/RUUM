@@ -3,7 +3,7 @@ import styles from './VideoTour.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 //Hooks
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 //Config
 import { apiCall, apiHeaders } from '../Config/Config';
 import API_CONFIG from '../Config/Config';
@@ -72,8 +72,9 @@ const VideoTour = () => {
         promptImage: '',
         promptText: '',
         ratio: '1280:720',
-        duration: 4,
-        model: 'gen4_turbo'
+        duration: 5,
+        model: 'gen4_turbo',
+        withHuman: false
     });
     const [runwayLoading, setRunwayLoading] = useState(false);
     const [generatedVideo, setGeneratedVideo] = useState(null);
@@ -81,19 +82,30 @@ const VideoTour = () => {
     // Estados para o gerador de script
     const [scriptLoading, setScriptLoading] = useState(false);
     const [generatedScript, setGeneratedScript] = useState(null);
+    const [originalScript, setOriginalScript] = useState(null);
     const [scriptImageUrl, setScriptImageUrl] = useState('');
-    
+    const [isEditingScript, setIsEditingScript] = useState(false);
+
     // Estados para o Text-to-Speech
     const [ttsLoading, setTtsLoading] = useState(false);
     const [audioUrl, setAudioUrl] = useState(null);
     const [selectedVoice, setSelectedVoice] = useState('RACHEL');
+
+    // Estados para combinação de vídeo + áudio
+    const [combineLoading, setCombineLoading] = useState(false);
+    const [combinedVideo, setCombinedVideo] = useState(null);
+
+    // useEffect para gerar prompt inicial
+    useEffect(() => {
+        updateVideoPrompt(runwayForm.duration, runwayForm.withHuman);
+    }, []); // Executa apenas uma vez no mount
 
     // Função especial para chamadas que retornam blob
     const apiCallBlob = async (endpoint, options = {}) => {
         console.log('apiCallBlob - Endpoint:', endpoint);
         console.log('apiCallBlob - Options:', options);
         console.log('apiCallBlob - URL completa:', `${API_CONFIG.BASE_URL}${endpoint}`);
-        
+
         const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
             headers: apiHeaders,
             ...options
@@ -106,11 +118,11 @@ const VideoTour = () => {
             // Tentar ler a resposta como JSON para pegar a mensagem de erro
             let errorMessage = `HTTP ${response.status}`;
             let errorDetails = null;
-            
+
             try {
                 const responseText = await response.text();
                 console.log('apiCallBlob - Error response text:', responseText);
-                
+
                 // Tentar fazer parse do JSON
                 try {
                     errorDetails = JSON.parse(responseText);
@@ -123,7 +135,7 @@ const VideoTour = () => {
                 console.error('apiCallBlob - Erro ao ler resposta de erro:', textError);
                 errorMessage = `${errorMessage} - ${response.statusText}`;
             }
-            
+
             console.error('apiCallBlob - Erro completo:', { status: response.status, message: errorMessage, details: errorDetails });
             throw new Error(errorMessage);
         }
@@ -161,13 +173,58 @@ const VideoTour = () => {
         console.log(JSON.stringify(json, null, 2));
     };
 
-    // Funções para o Runway
-    const handleRunwayFormChange = (e) => {
-        const { name, value } = e.target;
+    // Função para gerar prompt automático do vídeo
+    const generateVideoPrompt = (duration, withHuman) => {
+        if (withHuman) {
+            return "Introduce a man walking through the room. Make sure lighting and perspective match the original image and ensure that the character considers original furniture placement.";
+        }
+        
+        if (duration === 5) {
+            return "POV slow motion forward.";
+        } else if (duration === 10) {
+            return "POV slow motion forward. Keep the original image unchanged. No new elements, no hidden areas revealed.";
+        }
+        
+        // Para outras durações, usar o prompt básico
+        return "POV slow motion forward.";
+    };
+
+    // Função para atualizar prompt automaticamente
+    const updateVideoPrompt = (duration, withHuman) => {
+        const newPrompt = generateVideoPrompt(duration, withHuman);
         setRunwayForm(prev => ({
             ...prev,
-            [name]: value
+            promptText: newPrompt
         }));
+        console.log('✅ Prompt do vídeo atualizado automaticamente:', newPrompt);
+    };
+
+    // Funções para o Runway
+    const handleRunwayFormChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        const newValue = type === 'checkbox' ? checked : value;
+        
+        let updatedForm = {
+            ...runwayForm,
+            [name]: newValue
+        };
+
+        // Se marcou "Com Figura Humana", forçar duração para 5 segundos
+        if (name === 'withHuman' && checked) {
+            updatedForm.duration = 5;
+        }
+
+        setRunwayForm(updatedForm);
+
+        // Atualizar prompt automaticamente quando mudar duração ou withHuman
+        if (name === 'duration' || name === 'withHuman') {
+            const finalDuration = name === 'duration' ? parseInt(newValue) : updatedForm.duration;
+            const finalWithHuman = name === 'withHuman' ? newValue : updatedForm.withHuman;
+            
+            setTimeout(() => {
+                updateVideoPrompt(finalDuration, finalWithHuman);
+            }, 100); // Pequeno delay para garantir que o estado seja atualizado
+        }
     };
 
     const handleRunwaySubmit = async (e) => {
@@ -223,6 +280,15 @@ const VideoTour = () => {
 
             console.log('Script gerado:', response);
             setGeneratedScript(response.data.result);
+            setOriginalScript(response.data.result); // Salvar script original
+
+            // Sincronizar URL da imagem com o formulário do Runway
+            setRunwayForm(prev => ({
+                ...prev,
+                promptImage: scriptImageUrl
+            }));
+
+            console.log('✅ URL da imagem sincronizada com o formulário do Runway');
 
         } catch (error) {
             console.error('Erro ao gerar script:', error);
@@ -230,6 +296,26 @@ const VideoTour = () => {
         } finally {
             setScriptLoading(false);
         }
+    };
+
+    // Funções para edição do script
+    const handleScriptChange = (e) => {
+        setGeneratedScript(e.target.value);
+    };
+
+    const handleEditScript = () => {
+        setIsEditingScript(true);
+    };
+
+    const handleSaveScript = () => {
+        setIsEditingScript(false);
+        console.log('Script editado salvo:', generatedScript);
+    };
+
+    const handleCancelEditScript = () => {
+        setIsEditingScript(false);
+        setGeneratedScript(originalScript); // Restaurar script original
+        console.log('Edição cancelada, script original restaurado');
     };
 
     // Funções para o Text-to-Speech
@@ -252,28 +338,28 @@ const VideoTour = () => {
                 voice: selectedVoice,
                 model: "eleven_multilingual_v2"
             };
-            
+
             console.log('=== TTS REQUEST DEBUG ===');
             console.log('Enviando payload para TTS:', payload);
             console.log('Tamanho do texto:', generatedScript.length, 'caracteres');
             console.log('Headers que serão enviados:', apiHeaders);
             console.log('Timestamp:', new Date().toISOString());
             console.log('========================');
-            
+
             // Usando apiCallBlob para requisições que retornam blob
             const audioBlob = await apiCallBlob('/api/elevenlabs/text-to-speech', {
                 method: "POST",
                 body: JSON.stringify(payload)
             });
-            
+
             console.log('✅ TTS bem-sucedido!');
             console.log('Blob de áudio recebido:', audioBlob);
             console.log('Tamanho do blob:', audioBlob.size, 'bytes');
-            
+
             // Criar URL para reproduzir
             const newAudioUrl = URL.createObjectURL(audioBlob);
             setAudioUrl(newAudioUrl);
-            
+
             console.log('Áudio gerado com sucesso');
 
         } catch (error) {
@@ -286,7 +372,7 @@ const VideoTour = () => {
                 details: error.details,
                 timestamp: new Date().toISOString()
             });
-            
+
             if (error.message.includes('401') || error.message.includes('autenticação')) {
                 alert('🔐 Erro de autenticação com ElevenLabs.\nO token no backend pode estar inválido ou expirado.\nVerifique a configuração no servidor.');
             } else if (error.message.includes('500')) {
@@ -310,21 +396,21 @@ const VideoTour = () => {
                 voice: selectedVoice,
                 model: "eleven_multilingual_v2"
             };
-            
+
             console.log('=== TTS TESTE DEBUG ===');
             console.log('Testando TTS com payload simples:', testPayload);
             console.log('Headers que serão enviados:', apiHeaders);
             console.log('Timestamp:', new Date().toISOString());
             console.log('======================');
-            
+
             const audioBlob = await apiCallBlob('/api/elevenlabs/text-to-speech', {
                 method: "POST",
                 body: JSON.stringify(testPayload)
             });
-            
+
             const newAudioUrl = URL.createObjectURL(audioBlob);
             setAudioUrl(newAudioUrl);
-            
+
             console.log('✅ Teste TTS realizado com sucesso');
             console.log('Tamanho do blob:', audioBlob.size, 'bytes');
 
@@ -336,7 +422,7 @@ const VideoTour = () => {
                 details: error.details,
                 timestamp: new Date().toISOString()
             });
-            
+
             if (error.message.includes('401') || error.message.includes('autenticação')) {
                 alert('🔐 Erro de autenticação no teste TTS.\nO token ElevenLabs no backend precisa ser verificado.');
             } else if (error.message.includes('500')) {
@@ -349,46 +435,204 @@ const VideoTour = () => {
         }
     };
 
-    const handleSendToShotstack = async () => {
-        setLoading(true);
+    // Função para combinar vídeo do Runway com áudio do TTS
+    const handleCombineVideoAudio = async () => {
+        if (!generatedVideo || !audioUrl) {
+            alert('❌ Você precisa gerar tanto o vídeo quanto o áudio antes de combinar.');
+            return;
+        }
+
+        if (!generatedVideo.output || !Array.isArray(generatedVideo.output) || generatedVideo.output.length === 0) {
+            alert('❌ Vídeo gerado não está disponível ou não foi processado corretamente.');
+            return;
+        }
+
+        setCombineLoading(true);
+        setCombinedVideo(null);
+
         try {
-            // 1. Envia o JSON para o backend
-            const data = await apiCall('/send-shotstack', {
+            console.log('=== COMBINAÇÃO VÍDEO + ÁUDIO ===');
+            console.log('URL do vídeo:', generatedVideo.output[0]);
+            console.log('URL do áudio:', audioUrl);
+            console.log('Duração estimada:', runwayForm.duration, 'segundos');
+            console.log('===============================');
+
+            // Fazer upload do áudio primeiro (converter blob para URL pública)
+            const audioBlob = await fetch(audioUrl).then(r => r.blob());
+            console.log('Blob do áudio obtido:', audioBlob.size, 'bytes');
+
+            const payload = {
+                videoUrl: generatedVideo.output[0],
+                audioBlob: audioBlob,
+                duration: runwayForm.duration,
+                outputFormat: 'mp4'
+            };
+
+            console.log('Enviando para combinação...');
+            const response = await apiCall('/api/video/combine-audio', {
                 method: 'POST',
-                body: JSON.stringify(json),
+                body: JSON.stringify({
+                    videoUrl: generatedVideo.output[0],
+                    audioUrl: audioUrl, // Enviar como URL temporária
+                    duration: runwayForm.duration,
+                    outputFormat: 'mp4'
+                })
             });
 
-            const renderId = data.id;
-            console.log("Render ID:", renderId);
+            console.log('✅ Vídeo combinado com áudio:', response);
+            setCombinedVideo(response.data);
 
-            // 2. Polling para status
-            const poll = setInterval(async () => {
-                console.log("Consultando status do render:", renderId);
+        } catch (error) {
+            console.error('❌ Erro ao combinar vídeo com áudio:', error);
+            alert('❌ Erro ao combinar vídeo com áudio: ' + error.message);
+        } finally {
+            setCombineLoading(false);
+        }
+    };
+
+    // Função alternativa usando Shotstack para combinar vídeo + áudio
+    const handleCombineWithShotstack = async () => {
+        if (!generatedVideo || !audioUrl) {
+            alert('❌ Você precisa gerar tanto o vídeo quanto o áudio antes de combinar.');
+            return;
+        }
+
+        if (!generatedVideo.output || !Array.isArray(generatedVideo.output) || generatedVideo.output.length === 0) {
+            alert('❌ Vídeo gerado não está disponível ou não foi processado corretamente.');
+            return;
+        }
+
+        setCombineLoading(true);
+        setCombinedVideo(null);
+
+        try {
+            console.log('=== COMBINAÇÃO SHOTSTACK ===');
+            console.log('URL do vídeo:', generatedVideo.output[0]);
+            console.log('URL do áudio:', audioUrl);
+            console.log('Duração:', runwayForm.duration, 'segundos');
+            console.log('===========================');
+
+            // Criar JSON do Shotstack com o vídeo do Runway + áudio do TTS
+            const shotstackJson = {
+                timeline: {
+                    tracks: [
+                        {
+                            clips: [
+                                {
+                                    asset: {
+                                        type: "video",
+                                        src: generatedVideo.output[0]
+                                    },
+                                    start: 0,
+                                    length: runwayForm.duration
+                                }
+                            ]
+                        },
+                        {
+                            clips: [
+                                {
+                                    asset: {
+                                        type: "audio",
+                                        src: audioUrl
+                                    },
+                                    start: 0,
+                                    length: runwayForm.duration
+                                }
+                            ]
+                        }
+                    ]
+                },
+                output: {
+                    format: "mp4",
+                    size: {
+                        width: 1280,
+                        height: 720
+                    }
+                }
+            };
+
+            console.log('JSON Shotstack:', JSON.stringify(shotstackJson, null, 2));
+
+            // Enviar para o Shotstack
+            const response = await apiCall('/send-shotstack', {
+                method: 'POST',
+                body: JSON.stringify(shotstackJson)
+            });
+
+            const renderId = response.id;
+            console.log('Render ID Shotstack:', renderId);
+
+            // Polling para status da combinação
+            const pollCombination = setInterval(async () => {
+                console.log('Consultando status da combinação:', renderId);
                 try {
                     const statusData = await apiCall(`/shotstack-status/${renderId}`);
+                    console.log('Status atual:', statusData.status);
 
                     if (statusData.status === "done" && statusData.url) {
-                        clearInterval(poll);
-                        setLoading(false);
-                        const cdnUrl = statusData.url;
-                        console.log("Vídeo pronto:", cdnUrl);
-                        alert("Vídeo pronto! Veja o console para a URL.");
+                        clearInterval(pollCombination);
+                        setCombineLoading(false);
+                        
+                        const finalVideo = {
+                            output: [statusData.url],
+                            status: "done",
+                            id: renderId,
+                            type: "combined"
+                        };
+                        
+                        setCombinedVideo(finalVideo);
+                        console.log('✅ Vídeo final combinado:', statusData.url);
+                        
                     } else if (statusData.status === "failed") {
-                        clearInterval(poll);
-                        setLoading(false);
-                        alert("Falha ao renderizar o vídeo.");
+                        clearInterval(pollCombination);
+                        setCombineLoading(false);
+                        alert('❌ Falha ao combinar vídeo com áudio.');
                     }
                 } catch (error) {
-                    console.error("Erro ao consultar status:", error);
+                    console.error('Erro ao consultar status da combinação:', error);
                 }
-            }, 4000); // consulta a cada 4 segundos
-        } catch (err) {
-            setLoading(false);
-            alert("Erro ao enviar para Shotstack: " + err.message);
+            }, 3000); // consulta a cada 3 segundos
+
+        } catch (error) {
+            console.error('❌ Erro ao combinar com Shotstack:', error);
+            alert('❌ Erro ao combinar vídeo com áudio: ' + error.message);
+            setCombineLoading(false);
         }
-    }; return (
+    };
+
+    return (
         <div className={`container mt-4 ${styles.videoTourContainer}`}>
             <h2 className="mb-4">Gerador de Vídeo com Runway</h2>
+            
+            {/* Seção de Instruções */}
+            <div className="card mb-4" style={{ border: '1px solid #007bff', backgroundColor: '#f8f9ff' }}>
+                <div className="card-header" style={{ backgroundColor: '#007bff', color: 'white' }}>
+                    <h5 className="mb-0">📋 Como usar - Vídeo com Locução</h5>
+                </div>
+                <div className="card-body">
+                    <div className="row">
+                        <div className="col-md-4">
+                            <h6 className="text-primary">1️⃣ Gerar Script</h6>
+                            <p className="small">Insira a URL de uma imagem e gere um script de locução usando ChatGPT. Você pode editar o script antes de gerar o áudio.</p>
+                        </div>
+                        <div className="col-md-4">
+                            <h6 className="text-success">2️⃣ Gerar Áudio</h6>
+                            <p className="small">Converta o script em áudio usando Text-to-Speech (ElevenLabs). Edite o script se necessário.</p>
+                        </div>
+                        <div className="col-md-4">
+                            <h6 className="text-info">3️⃣ Gerar Vídeo</h6>
+                            <p className="small">Crie um vídeo a partir da mesma imagem usando Runway Gen-4. URL e prompt são gerados automaticamente. Opção para incluir figura humana.</p>
+                        </div>
+                    </div>
+                    <div className="mt-3">
+                        <div className="alert alert-warning small">
+                            <strong>🎯 Funcionalidade Extra:</strong> Após gerar o vídeo E o áudio, você pode combiná-los em um único arquivo final!<br/>
+                            <strong>✨ Novo:</strong> Edite o script, URL sincronizada automaticamente, e prompts de vídeo gerados conforme configuração!<br/>
+                            <strong>🚶 Figura Humana:</strong> Marque a opção para adicionar uma pessoa caminhando no ambiente (duração fixa de 5s).
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Preview da Imagem */}
             {(runwayForm.promptImage || scriptImageUrl) && (
@@ -466,25 +710,65 @@ const VideoTour = () => {
                                     className="form-control"
                                     rows="6"
                                     value={generatedScript}
-                                    readOnly
-                                    style={{ fontSize: '1.1rem', lineHeight: '1.6' }}
+                                    onChange={handleScriptChange}
+                                    readOnly={!isEditingScript}
+                                    style={{ 
+                                        fontSize: '1.1rem', 
+                                        lineHeight: '1.6',
+                                        backgroundColor: isEditingScript ? '#fff' : '#f8f9fa',
+                                        border: isEditingScript ? '2px solid #007bff' : '1px solid #dee2e6'
+                                    }}
+                                    placeholder="Seu script de locução..."
                                 />
+                                {isEditingScript && (
+                                    <div className="form-text text-primary">
+                                        ✏️ Modo de edição ativo - Modifique o script conforme necessário
+                                    </div>
+                                )}
+                                <div className="form-text text-muted text-end">
+                                    {generatedScript ? generatedScript.length : 0} caracteres
+                                </div>
                             </div>
                             <div className="mt-3">
                                 <div className="row">
                                     <div className="col-md-8">
-                                        <button
-                                            className="btn btn-outline-primary me-2"
-                                            onClick={() => navigator.clipboard.writeText(generatedScript)}
-                                        >
-                                            📋 Copiar Script
-                                        </button>
-                                        <button
-                                            className="btn btn-outline-secondary me-2"
-                                            onClick={() => setGeneratedScript(null)}
-                                        >
-                                            🗑️ Limpar
-                                        </button>
+                                        {!isEditingScript ? (
+                                            <>
+                                                <button
+                                                    className="btn btn-primary me-2"
+                                                    onClick={handleEditScript}
+                                                >
+                                                    ✏️ Editar Script
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-primary me-2"
+                                                    onClick={() => navigator.clipboard.writeText(generatedScript)}
+                                                >
+                                                    📋 Copiar Script
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-secondary me-2"
+                                                    onClick={() => setGeneratedScript(null)}
+                                                >
+                                                    🗑️ Limpar
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    className="btn btn-success me-2"
+                                                    onClick={handleSaveScript}
+                                                >
+                                                    ✅ Salvar Edições
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-secondary me-2"
+                                                    onClick={handleCancelEditScript}
+                                                >
+                                                    ❌ Cancelar
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                     <div className="col-md-4">
                                         <select
@@ -570,119 +854,137 @@ const VideoTour = () => {
             )}
 
             {/* Formulário do Runway */}
-            <div className={`card mb-4 ${styles.runwayCard}`}>
-                <div className="card-header">
-                    <h4>Gerar Vídeo a partir de Imagem</h4>
-                </div>
-                <div className="card-body">
-                    <form onSubmit={handleRunwaySubmit}>
-                        <div className="row">
-                            <div className="col-md-6">
-                                <div className="mb-3">
-                                    <label htmlFor="promptImage" className="form-label">
-                                        URL da Imagem *
-                                    </label>
-                                    <input
-                                        type="url"
-                                        className="form-control"
-                                        id="promptImage"
-                                        name="promptImage"
-                                        value={runwayForm.promptImage}
-                                        onChange={handleRunwayFormChange}
-                                        placeholder="https://exemplo.com/imagem.jpg"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label htmlFor="promptText" className="form-label">
-                                        Descrição do Vídeo
-                                    </label>
-                                    <textarea
-                                        className="form-control"
-                                        id="promptText"
-                                        name="promptText"
-                                        value={runwayForm.promptText}
-                                        onChange={handleRunwayFormChange}
-                                        placeholder="Descreva como o vídeo deve ser..."
-                                        rows="3"
-                                    />
-                                </div>
+                        <div className={`card mb-4 ${styles.runwayCard}`}>
+                            <div className="card-header">
+                                <h4>Gerar Vídeo a partir de Imagem</h4>
                             </div>
+                            <div className="card-body">
+                                <form onSubmit={handleRunwaySubmit}>
+                                    <div className="row">
+                                        <div className="col-md-6">
+                                            <div className="mb-3">
+                                                <label htmlFor="promptImage" className="form-label">
+                                                    URL da Imagem *
+                                                    {runwayForm.promptImage && (
+                                                        <span className="text-success small"> (Sincronizada automaticamente)</span>
+                                                    )}
+                                                </label>
+                                                <input
+                                                    type="url"
+                                                    className="form-control"
+                                                    id="promptImage"
+                                                    name="promptImage"
+                                                    value={runwayForm.promptImage}
+                                                    onChange={handleRunwayFormChange}
+                                                    placeholder="https://exemplo.com/imagem.jpg"
+                                                    readOnly={!!runwayForm.promptImage}
+                                                    required
+                                                />
+                                                {runwayForm.promptImage && (
+                                                    <div className="form-text text-success">
+                                                        ✅ URL sincronizada automaticamente do script de locução
+                                                    </div>
+                                                )}
+                                            </div>
 
-                            <div className="col-md-6">
-                                <div className="mb-3">
-                                    <label htmlFor="ratio" className="form-label">
-                                        Proporção
-                                    </label>
-                                    <select
-                                        className="form-select"
-                                        id="ratio"
-                                        name="ratio"
-                                        value={runwayForm.ratio}
-                                        onChange={handleRunwayFormChange}
-                                    >
-                                        <option value="1280:720">16:9 (1280x720)</option>
-                                        <option value="1024:1024">1:1 (1024x1024)</option>
-                                        <option value="720:1280">9:16 (720x1280)</option>
-                                    </select>
-                                </div>
+                                            <div className="mb-3">
+                                                <div className="form-check d-flex align-items-center">
+                                                    <input
+                                                        className="form-check-input me-2"
+                                                        type="checkbox"
+                                                        id="withHuman"
+                                                        name="withHuman"
+                                                        checked={runwayForm.withHuman}
+                                                        onChange={handleRunwayFormChange}
+                                                    />
+                                                    <label className="form-check-label mb-0" htmlFor="withHuman">
+                                                        <strong>Com Figura Humana</strong>
+                                                    </label>
+                                                </div>
+                                                {runwayForm.withHuman && (
+                                                    <div className="form-text text-warning">
+                                                        ⚠️ Duração fixada em 5 segundos para vídeos com figura humana
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                <div className="mb-3">
-                                    <label htmlFor="duration" className="form-label">
-                                        Duração (segundos)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        id="duration"
-                                        name="duration"
-                                        value={runwayForm.duration}
-                                        onChange={handleRunwayFormChange}
-                                        min="1"
-                                        max="10"
-                                    />
-                                </div>
+                                            <div className="mb-3">
+                                                <label htmlFor="promptText" className="form-label">
+                                                    Descrição do Vídeo
+                                                    <span className="text-success small"> (Gerada automaticamente)</span>
+                                                </label>
+                                                <textarea
+                                                    className="form-control"
+                                                    id="promptText"
+                                                    name="promptText"
+                                                    value={runwayForm.promptText}
+                                                    readOnly
+                                                    placeholder="Prompt gerado automaticamente baseado na configuração..."
+                                                    rows="3"
+                                                    style={{ backgroundColor: '#f8f9fa' }}
+                                                />
+                                                <div className="form-text text-success">
+                                                    ✅ Prompt gerado automaticamente baseado na duração e opções selecionadas
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                <div className="mb-3">
-                                    <label htmlFor="model" className="form-label">
-                                        Modelo
-                                    </label>
-                                    <select
-                                        className="form-select"
-                                        id="model"
-                                        name="model"
-                                        value={runwayForm.model}
-                                        onChange={handleRunwayFormChange}
-                                    >
-                                        <option value="gen4_turbo">Gen4 Turbo</option>
-                                        <option value="gen4">Gen4</option>
-                                    </select>
-                                </div>
+                                        <div className="col-md-6">
+
+
+                                            <div className="mb-3">
+                                                <label htmlFor="duration" className="form-label">
+                                                    Duração (segundos)
+                                                    {runwayForm.withHuman && (
+                                                        <span className="text-warning small"> (Fixo para figura humana)</span>
+                                                    )}
+                                                </label>
+                                                <select
+                                                    className="form-select"
+                                                    id="duration"
+                                                    name="duration"
+                                                    value={runwayForm.duration}
+                                                    onChange={handleRunwayFormChange}
+                                                    disabled={runwayForm.withHuman}
+                                                    style={{ 
+                                                        backgroundColor: runwayForm.withHuman ? '#f8f9fa' : '#fff',
+                                                        cursor: runwayForm.withHuman ? 'not-allowed' : 'pointer'
+                                                    }}
+                                                >
+                                                    <option value="5">5 segundos</option>
+                                                    <option value="10">10 segundos</option>
+                                                </select>
+                                                {runwayForm.withHuman && (
+                                                    <div className="form-text text-info">
+                                                        ℹ️ Duração automaticamente definida como 5 segundos para vídeos com figura humana
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <button
+                                            type="submit"
+                                            className={`btn btn-primary btn-lg ${styles.generateBtn}`}
+                                            disabled={runwayLoading}
+                                        >
+                                            {runwayLoading ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm me-2" />
+                                                    Gerando vídeo...
+                                                </>
+                                            ) : (
+                                                'Gerar Vídeo'
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
 
-                        <div className="text-center">
-                            <button
-                                type="submit"
-                                className={`btn btn-primary btn-lg ${styles.generateBtn}`}
-                                disabled={runwayLoading}
-                            >
-                                {runwayLoading ? (
-                                    <>
-                                        <span className="spinner-border spinner-border-sm me-2" />
-                                        Gerando vídeo...
-                                    </>
-                                ) : (
-                                    'Gerar Vídeo'
-                                )}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            {/* Vídeo Gerado */}
+                        {/* Vídeo Gerado */}
             {generatedVideo && (
                 <div className={`card mb-4 ${styles.videoCard}`}>
                     <div className="card-header">
@@ -733,41 +1035,166 @@ const VideoTour = () => {
                 </div>
             )}
 
+            {/* Seção de Combinação Vídeo + Áudio */}
+            {generatedVideo && audioUrl && (
+                <div className="card mb-4" style={{ border: '2px solid #28a745' }}>
+                    <div className="card-header" style={{ background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)', color: 'white' }}>
+                        <h5 className="mb-0">🎬 Combinar Vídeo + Áudio</h5>
+                    </div>
+                    <div className="card-body">
+                        <div className="alert alert-info">
+                            <h6>✨ Agora você pode combinar o vídeo gerado pelo Runway com o áudio do TTS!</h6>
+                            <p className="mb-2">
+                                <strong>Vídeo:</strong> {generatedVideo.output && generatedVideo.output[0] ? 'Disponível' : 'Não disponível'}<br/>
+                                <strong>Áudio:</strong> {audioUrl ? 'Disponível' : 'Não disponível'}<br/>
+                                <strong>Duração:</strong> {runwayForm.duration} segundos
+                            </p>
+                        </div>
+                        <div className="text-center">
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <button
+                                        className="btn btn-primary btn-lg mb-2"
+                                        onClick={handleCombineWithShotstack}
+                                        disabled={combineLoading}
+                                        style={{ minWidth: '200px' }}
+                                    >
+                                        {combineLoading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" />
+                                                Combinando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                🎬 Combinar via Shotstack
+                                            </>
+                                        )}
+                                    </button>
+                                    <div className="text-muted small">
+                                        Recomendado - Usar Shotstack para combinar
+                                    </div>
+                                </div>
+                                <div className="col-md-6">
+                                    <button
+                                        className="btn btn-outline-success btn-lg mb-2"
+                                        onClick={handleCombineVideoAudio}
+                                        disabled={combineLoading}
+                                        style={{ minWidth: '200px' }}
+                                    >
+                                        {combineLoading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" />
+                                                Combinando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                🎞️ Combinar via Backend
+                                            </>
+                                        )}
+                                    </button>
+                                    <div className="text-muted small">
+                                        Alternativo - Usar backend próprio
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Vídeo Final Combinado */}
+            {combinedVideo && (
+                <div className="card mb-4" style={{ border: '2px solid #ffc107' }}>
+                    <div className="card-header" style={{ background: 'linear-gradient(135deg, #ffc107 0%, #fd7e14 100%)', color: 'white' }}>
+                        <h5 className="mb-0">🏆 Vídeo Final (Vídeo + Áudio)</h5>
+                    </div>
+                    <div className="card-body">
+                        <div className="alert alert-success">
+                            <h6>🎉 Vídeo com áudio gerado com sucesso!</h6>
+                            <p className="mb-0">Seu vídeo agora inclui a locução gerada pelo TTS.</p>
+                        </div>
+                        <div className="text-center">
+                            {combinedVideo.output && combinedVideo.output.length > 0 ? (
+                                <div>
+                                    <video
+                                        controls
+                                        width="100%"
+                                        style={{ maxWidth: '800px' }}
+                                        className="mb-3"
+                                    >
+                                        <source src={combinedVideo.output[0]} type="video/mp4" />
+                                        Seu navegador não suporta o elemento de vídeo.
+                                    </video>
+                                    <div className="mt-3">
+                                        <a
+                                            href={combinedVideo.output[0]}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="btn btn-primary me-2"
+                                        >
+                                            🎬 Abrir Vídeo Final
+                                        </a>
+                                        <button
+                                            className="btn btn-outline-secondary"
+                                            onClick={() => navigator.clipboard.writeText(combinedVideo.output[0])}
+                                        >
+                                            📋 Copiar URL
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="alert alert-info">
+                                    <h6>Detalhes do Vídeo Final:</h6>
+                                    <pre>{JSON.stringify(combinedVideo, null, 2)}</pre>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Seção de Diagnóstico */}
             <div className="card mt-4" style={{ backgroundColor: '#f8f9fa', border: '1px solid #dee2e6' }}>
                 <div className="card-header" style={{ backgroundColor: '#e9ecef' }}>
-                    <h6 className="mb-0">🔧 Diagnóstico TTS (Para Desenvolvedores)</h6>
+                    <h6 className="mb-0">🔧 Diagnóstico & Informações (Para Desenvolvedores)</h6>
                 </div>
                 <div className="card-body">
                     <div className="row">
                         <div className="col-md-6">
-                            <h6>Configuração Frontend:</h6>
+                            <h6>Frontend - Configuração:</h6>
                             <ul className="list-unstyled text-muted small">
                                 <li>✅ Token de autenticação: {apiHeaders.Authorization ? 'Configurado' : '❌ Não configurado'}</li>
                                 <li>✅ Headers: Content-Type definido</li>
                                 <li>✅ Função apiCallBlob: Implementada</li>
                                 <li>✅ Logs detalhados: Habilitados</li>
+                                <li>✅ Combinação Vídeo+Áudio: Implementada</li>
+                                <li>✅ Edição de Script: Implementada</li>
+                                <li>✅ Sincronização de URL: Automática</li>
+                                <li>✅ Prompts Automáticos: Baseados na duração</li>
+                                <li>✅ Figura Humana: Opção implementada</li>
                             </ul>
                         </div>
                         <div className="col-md-6">
-                            <h6>Troubleshooting Backend:</h6>
+                            <h6>Backend - Endpoints Necessários:</h6>
                             <ul className="list-unstyled text-muted small">
-                                <li>🔍 Verificar token ElevenLabs no backend</li>
-                                <li>🔍 Confirmar endpoint: /api/elevenlabs/text-to-speech</li>
-                                <li>🔍 Validar headers CORS</li>
-                                <li>🔍 Checar logs do servidor para detalhes do erro 500</li>
+                                <li>🔍 /api/elevenlabs/text-to-speech (TTS)</li>
+                                <li>🔍 /api/runway/image-to-video (Runway)</li>
+                                <li>🔍 /api/chatgpt (Script)</li>
+                                <li>🔍 /api/video/combine-audio (Combinação)</li>
+                                <li>🔍 /send-shotstack (Shotstack)</li>
                             </ul>
                         </div>
                     </div>
                     <div className="mt-3">
                         <small className="text-muted">
+                            <strong>💡 Runway API:</strong> Não suporta áudio diretamente. Solução: combinar vídeo + áudio via Shotstack ou backend próprio.<br/>
                             <strong>Endpoint TTS:</strong> {getSystemInfo().apiEndpoint}<br/>
                             <strong>Token Preview:</strong> {getSystemInfo().tokenPreview}<br/>
                             <strong>Última tentativa:</strong> {getSystemInfo().timestamp}
                         </small>
                     </div>
                     <div className="mt-2">
-                        <button 
+                        <button
                             className="btn btn-sm btn-outline-secondary"
                             onClick={() => {
                                 const info = getSystemInfo();
@@ -779,6 +1206,19 @@ const VideoTour = () => {
                                 console.log('Token preview:', info.tokenPreview);
                                 console.log('Headers completos:', apiHeaders);
                                 console.log('User Agent:', info.userAgent);
+                                console.log('=== ESTADO ATUAL ===');
+                                console.log('Script gerado:', !!generatedScript);
+                                console.log('Script sendo editado:', isEditingScript);
+                                console.log('Script original preservado:', !!originalScript);
+                                console.log('URL sincronizada:', runwayForm.promptImage === scriptImageUrl);
+                                console.log('Áudio gerado:', !!audioUrl);
+                                console.log('Vídeo gerado:', !!generatedVideo);
+                                console.log('Vídeo combinado:', !!combinedVideo);
+                                console.log('=== CONFIGURAÇÕES RUNWAY ===');
+                                console.log('Duração selecionada:', runwayForm.duration, 'segundos');
+                                console.log('Com figura humana:', runwayForm.withHuman);
+                                console.log('Prompt atual:', runwayForm.promptText);
+                                console.log('Modelo:', runwayForm.model);
                                 console.log('==============================');
                                 alert('Informações de sistema enviadas para o console.');
                             }}
