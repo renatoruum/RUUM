@@ -5,6 +5,37 @@ import styles from './PropertysList.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
+// Função para traduzir tipos de imóveis para português
+const translatePropertyType = (type) => {
+  const translations = {
+    'Residential / Home': 'Casa Residencial',
+    'Residential / Apartment': 'Apartamento Residencial',
+    'Residential / Land Lot': 'Lote Residencial',
+    'Residential / Land/Lot': 'Lote Residencial',
+    'Residential / Condo': 'Condomínio Residencial',
+    'Residential / Farm Ranch': 'Fazenda Residencial',
+    'Commercial / Office': 'Escritório Comercial',
+    'Commercial / Store': 'Loja Comercial',
+    'Commercial / Edificio Comercial': 'Edificio Comercial',
+    'Industrial / Warehouse': 'Galpão Industrial',
+    'Commercial / Business': 'Negócio Comercial',
+    'Rural / Property': 'Propriedade Rural',
+    'Vacation / Home': 'Casa de Veraneio',
+    'Studio': 'Estúdio',
+    'Loft': 'Loft',
+    'Penthouse': 'Cobertura',
+    'Townhouse': 'Sobrado',
+    'Duplex': 'Duplex',
+    'Triplex': 'Triplex',
+    'Condominium': 'Condomínio',
+    'Land': 'Terreno',
+    'Farm': 'Fazenda',
+    'Ranch': 'Sítio'
+  };
+  
+  return translations[type] || type; // Retorna tradução ou o tipo original se não encontrar
+};
+
 const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToShow, loading }) => {
   const bottomRef = useRef(null);
   const [filters, setFilters] = useState({
@@ -85,12 +116,12 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
     if (filters.vagas && String(fields.Vagas) !== filters.vagas) return false;
     if (filters.cidade && fields.Cidade && !fields.Cidade.toLowerCase().includes(filters.cidade.toLowerCase())) return false;
     if (filters.uf && fields.UF && fields.UF !== filters.uf) return false;
-    if (filters.tipo && fields.Tipo && fields.Tipo !== filters.tipo) return false;
+    if (filters.tipo && fields.Tipo && translatePropertyType(fields.Tipo) !== filters.tipo) return false;
     if (
       searchTerm &&
       !(
         (fields.Bairro && fields.Bairro.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (fields.Tipo && fields.Tipo.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (fields.Tipo && translatePropertyType(fields.Tipo).toLowerCase().includes(searchTerm.toLowerCase())) ||
         (fields.Codigo && fields.Codigo.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     ) {
@@ -104,9 +135,9 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
     .filter(p => p && (p.fields || typeof p.get === 'function'))
     .map(p => {
       if (typeof p.get === 'function') {
-        return p.get('Tipo');
+        return translatePropertyType(p.get('Tipo'));
       }
-      return p.fields?.Tipo;
+      return translatePropertyType(p.fields?.Tipo);
     })
     .filter(Boolean)));
     
@@ -439,7 +470,7 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
                     </div>
                   </div>
                   <div className={styles.infoContainer}>
-                    <h5 className={styles.propertyTitle}>{fields.Tipo || 'Imóvel'} - {fields.Bairro || ''}</h5>
+                    <h5 className={styles.propertyTitle}>{translatePropertyType(fields.Tipo) || 'Imóvel'} - {fields.Bairro || ''}</h5>
                     <div
                       className={`${styles.propertyDesc} ${isClamped ? styles.clamped : ''}`}
                       style={{ position: 'relative' }}

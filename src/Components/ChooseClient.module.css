@@ -1,0 +1,215 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #68bf6c 0%, #5ab05a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: #718096;
+  margin-bottom: 0;
+  font-weight: 400;
+}
+
+.searchContainer {
+  margin-bottom: 2rem;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #68bf6c;
+  box-shadow: 0 0 0 3px rgba(104, 191, 108, 0.1);
+  transform: translateY(-1px);
+}
+
+.clientGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.clientCard {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 2px solid #f7fafc;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.clientCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #68bf6c, #5ab05a);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.clientCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: #68bf6c;
+}
+
+.clientCard:hover::before {
+  transform: scaleX(1);
+}
+
+.clientIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #68bf6c 0%, #5ab05a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(104, 191, 108, 0.3);
+}
+
+.iconText {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+}
+
+.clientInfo {
+  flex: 1;
+}
+
+.clientName {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+.clientCode {
+  font-size: 0.9rem;
+  color: #718096;
+  margin-bottom: 0;
+  font-weight: 500;
+}
+
+.arrow {
+  color: #a0aec0;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.clientCard:hover .arrow {
+  color: #68bf6c;
+  transform: translateX(4px);
+}
+
+.noResults {
+  text-align: center;
+  padding: 3rem;
+  color: #718096;
+  font-size: 1.1rem;
+}
+
+.noResults p {
+  margin: 0;
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .clientGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .clientCard {
+    padding: 1rem;
+  }
+  
+  .clientIcon {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .iconText {
+    font-size: 1.2rem;
+  }
+  
+  .clientName {
+    font-size: 1.1rem;
+  }
+}
+
+/* Animation for when cards appear */
+.clientCard {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Staggered animation for multiple cards */
+.clientCard:nth-child(1) { animation-delay: 0.1s; }
+.clientCard:nth-child(2) { animation-delay: 0.2s; }
+.clientCard:nth-child(3) { animation-delay: 0.3s; }
+.clientCard:nth-child(4) { animation-delay: 0.4s; }
+.clientCard:nth-child(5) { animation-delay: 0.5s; }
+.clientCard:nth-child(6) { animation-delay: 0.6s; }

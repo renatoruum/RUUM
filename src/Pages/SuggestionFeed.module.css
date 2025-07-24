@@ -5,3 +5,44 @@
 .paragraph_font {
     font-size: 20px;
 }
+
+.backButton {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: linear-gradient(135deg, #68bf6c 0%, #5ab05a 100%);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(104, 191, 108, 0.3);
+    z-index: 100;
+}
+
+.backButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(104, 191, 108, 0.4);
+}
+
+.backButton:active {
+    transform: translateY(0);
+}
+
+.backButton svg {
+    color: white;
+    transition: transform 0.3s ease;
+}
+
+.backButton:hover svg {
+    transform: translateX(-2px);
+}
+
+.headerContainer {
+    position: relative;
+    padding-top: 20px;
+}

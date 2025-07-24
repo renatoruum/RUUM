@@ -12,7 +12,7 @@ const Home = () => {
   const navigate = useNavigate();
 
   const goFeed = () => {
-    navigate('/suggestionfeed');
+    navigate('/imobproperty');
   }
 
   useEffect(() => {

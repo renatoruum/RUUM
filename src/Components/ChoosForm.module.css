@@ -66,7 +66,7 @@
   box-shadow: 0 4px 12px rgba(44, 62, 80, 0.06);
   margin-bottom: 0.5rem;
   position: relative; /* Added for positioning child elements */
-  cursor: default; /* Changed from pointer to default since we're using buttons */
+  cursor: pointer; /* Changed to pointer to indicate the card is clickable */
   height: 100%; /* Ensure all cards have the same height */
   justify-content: flex-start; /* Alterado para flex-start para evitar espaçamento excessivo */
 }
@@ -265,6 +265,21 @@
   box-shadow: 0 2px 8px rgba(63, 81, 181, 0.1);
 }
 
+/* Estilos para VideoTour desabilitado */
+.disabledButton {
+  background-color: #bdbdbd;
+  color: #0e0e0e;
+  cursor: not-allowed;
+  box-shadow: 0 2px 8px rgba(189, 189, 189, 0.1);
+}
+
+.disabledButton:hover {
+  background-color: #bdbdbd;
+  color: #0e0e0e;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(189, 189, 189, 0.1);
+}
+
 .formContentContainer {
   width: 100%;
   height: 100%;
@@ -418,20 +433,20 @@
 /* Estilos para os cards de grupo */
 .groupsWrapper {
   display: flex;
-  flex-wrap: nowrap;
-  justify-content: space-between;
-  align-items: stretch; /* Mantém stretch para garantir altura igual dos filhos */
-  gap: 1.5rem;
+  flex-direction: column; /* Mudança para coluna para empilhar as seções */
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
   width: 100%;
-  max-width: 1200px;
-  margin: 0.5rem 0 1rem; /* Margens superior e inferior reduzidas */
+  max-width: 1300px;
+  margin: 0.5rem 0 2.5rem; /* Aumentada margem inferior para espaçamento da parte inferior da modal */
   align-self: center;
 }
 
 .groupSection {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  width: 100%;
 }
 
 .groupCard {
@@ -441,32 +456,29 @@
   border-radius: 16px;
   border: 2px solid #e6eaf0;
   box-shadow: 0 4px 12px rgba(44, 62, 80, 0.06);
-  padding: 1.2rem 1.5rem 0.8rem 1.5rem; /* Reduzido padding vertical */
+  padding: 1.2rem 1.5rem 0.8rem 1.5rem;
   position: relative;
-  align-items: flex-start;
-  height: 540px; /* Altura ainda mais reduzida */
-  min-height: auto;
+  align-items: center; /* Centralizar conteúdo */
+  min-height: 540px;
 }
 
 .imageGroupCard {
-  flex: 3;
   width: 100%;
 }
 
 .videoGroupCard {
-  flex: 1;
   width: 100%;
+  margin-bottom: 2rem; /* Adiciona margem inferior para espaçamento da parte inferior da modal */
 }
 
 .groupTitle {
-  font-size: 28px; /* Tamanho reduzido */
+  font-size: 28px;
   font-weight: 700;
   color: #68bf6c;
-  margin-bottom: 1rem; /* Espaçamento inferior reduzido */
+  margin-bottom: 1rem;
   font-family: '4text', sans-serif;
   width: 100%;
-  text-align: left;
-  padding-left: 0.5rem;
+  text-align: center; /* Centralizar título */
   background-color: transparent;
 }
 
@@ -475,43 +487,44 @@
   flex-direction: row;
   gap: 1rem;
   width: 100%;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center; /* Centraliza verticalmente os cards */
-  height: calc(100% - 45px); /* Altura ajustada para considerar o título */
+  flex-wrap: nowrap;
+  justify-content: center; /* Centralizar cards */
+  align-items: center;
+  height: calc(100% - 45px);
 }
 
 /* Ajustes para os cards dentro dos grupos */
 .groupContent .modelCard {
-  width: 48%;
-  min-width: 220px;
-  max-width: 49%;
-  padding: 1rem 0.75rem 3rem 0.75rem; /* Reduzido padding vertical */
+  width: 23%; /* 4 cards = ~23% cada (considerando gaps) */
+  min-width: 200px; /* Reduzido para caber 4 cards */
+  max-width: 23%;
+  padding: 1rem 0.75rem 3rem 0.75rem;
   margin-bottom: 0;
   box-shadow: 0 2px 8px rgba(44, 62, 80, 0.05);
-  height: 420px; /* Altura reduzida para todos os cards */
+  height: 420px;
   min-height: 420px;
-  position: relative; /* Para posicionamento absoluto do botão */
+  position: relative;
 }
 
+/* Cards da seção de vídeo mantêm o mesmo tamanho */
 .videoGroupCard .modelCard {
-  width: 100%;
-  min-width: 100%;
-  max-width: 100%;
-  height: 420px; /* Mesma altura dos outros cards */
+  width: 23%; /* Mesmo tamanho dos cards de imagem */
+  min-width: 200px;
+  max-width: 23%;
+  height: 420px;
 }
 
-/* Ajuste para manter os 3 cards com o mesmo tamanho */
+/* Remover ajustes antigos de proporção */
 .imageGroupCard, .videoGroupCard {
   flex-basis: auto;
 }
 
 .groupSection:first-child {
-  width: 66%;
+  width: 100%;
 }
 
 .groupSection:last-child {
-  width: 33%;
+  width: 100%;
 }
 
 /* Menor tamanho de fontes para os cards internos */
@@ -536,6 +549,53 @@
 /* Ajuste do selector original */
 .modelSelector {
   display: none; /* Escondemos o seletor original pois agora usamos o groupContainer */
+}
+
+/* Para telas menores, ajustar responsividade */
+@media (max-width: 1200px) {
+  .groupContent .modelCard {
+    width: 22%;
+    min-width: 180px;
+    max-width: 22%;
+  }
+  
+  .videoGroupCard .modelCard {
+    width: 22%;
+    min-width: 180px;
+    max-width: 22%;
+  }
+}
+
+@media (max-width: 1000px) {
+  .groupsWrapper {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .groupContent {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .groupContent .modelCard,
+  .videoGroupCard .modelCard {
+    width: 45%;
+    min-width: 200px;
+    max-width: 45%;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .groupContent .modelCard,
+  .videoGroupCard .modelCard {
+    width: 90%;
+    min-width: auto;
+    max-width: 90%;
+    margin-bottom: 0.8rem;
+    height: 400px;
+    min-height: 400px;
+  }
 }
 
 @media (max-width: 1000px) {

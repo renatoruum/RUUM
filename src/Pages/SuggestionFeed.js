@@ -1,4 +1,3 @@
-
 //STYLES
 import styles from './SuggestionFeed.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -7,6 +6,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { useState, useEffect } from 'react';
 import { useClientPlan } from '../Contexts/ClientPlanProvider';
 //Components
+import ChooseClient from '../Components/ChooseClient';
 import PropertysList from '../Components/PropertysList';
 import ImageSelector from '../Components/ImageSelector';
 //Airtable
@@ -14,28 +14,29 @@ import Airtable from 'airtable';
 //Constants
 import { PAGE_SIZE } from '../constants';
 
-const SuggestionFeed = ({ softrEmail }) => {
+const SuggestionFeed = () => {
 
   const [records, setRecords] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
-  const [showPropertysList, setShowPropertysList] = useState(true);
+  const [showChooseClient, setShowChooseClient] = useState(true);
+  const [showPropertysList, setShowPropertysList] = useState(false);
   const [showImageSelector, setShowImageSelector] = useState(false);
   const [topMessage, setTopMessage] = useState('Selecione abaixo o imóvel para Virtual Staging.');
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsToShow, setItemsToShow] = useState(PAGE_SIZE);
-  const {clientPlan, setClientPlan } = useClientPlan();
-  const [clientId, setClientId] = useState("");
+  const [clientId, setClientId] = useState("recMjeDtB77Ijl9BL");
   const [clientName, setClientName] = useState("");
   const [baseTable, setBaseTable] = useState("");
   const [userId, setUserId] = useState("");
-  const [clientEmail, setClientEmail] = useState("");
+  const [clientEmail, setClientEmail] = useState("galia@acasa7.com.br");
   const [clientInfos, setClientInfos] = useState({
     Email: "",
     ClientId: "",
     InvoiceId: "",
     UserId: "",
   });
+  const [clientsCrm, setClientsCrm] = useState([]);
 
   var client = {
     Email: "galia@acasa7.com.br",
@@ -44,34 +45,45 @@ const SuggestionFeed = ({ softrEmail }) => {
     UserId: "recMjeDtB77Ijl9BL",
   }
 
-  const getUserTable = async (email) => {
+  // Função para carregar todos os clientes com BaseCRM válido
+  const loadClientsFromCRM = async () => {
     setLoading(true);
     Airtable.configure({
       apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
     });
     const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
 
-    console.log('Buscando tabela do usuário:', email);
+    console.log('Carregando clientes da tabela Clients...');
 
     try {
-      const records = await base('Users')
+      const records = await base('Clients')
         .select({
-          filterByFormula: `{Email} = "${email}"`,
-          maxRecords: 1,
+          filterByFormula: `AND({BaseCRM} != "", {BaseCRM} != BLANK())`,
+          fields: ['Client Name', 'BaseCRM', 'Calculation']
         })
-        .firstPage();
+        .all();
 
-      if (records.length > 0) {
-        const userData = records[0].fields;
-        return userData;
-      } else {
-        return null;
-      }
+      const clientsData = records.map(record => ({
+        clientName: record.fields['Client Name'] || "",
+        baseCRM: record.fields.BaseCRM || "",
+        clientId: record.fields.Calculation || ""
+      }));
+
+      setClientsCrm(clientsData);
+      console.log('Clientes carregados:', clientsData);
+
     } catch (error) {
-      console.error('Erro ao buscar tabela do usuário:', error);
-      return null;
+      console.error('Erro ao carregar clientes:', error);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    if (clientsCrm) {
+      setShowChooseClient(clientsCrm.length > 0);
+    }
+  }, [clientsCrm])
 
   // Função para buscar o plano do cliente pelo nome
   const getClientTable = async (clientid) => {
@@ -98,7 +110,7 @@ const SuggestionFeed = ({ softrEmail }) => {
           BaseCRM: clientData.BaseCRM || null,
           Calculation: clientData.Calculation || null,
           InvoiceId: clientData.InvoiceId || null,
-          UserId: clientId || null,
+          UserId: clientId || "",
         };
       } else {
         return null;
@@ -110,27 +122,9 @@ const SuggestionFeed = ({ softrEmail }) => {
   };
 
   useEffect(() => {
-    var emailbase
-    if (!softrEmail) {
-      emailbase = "joel@krolowimoveis.com.br"
-    } else {
-      emailbase = softrEmail;
-    }
-    setClientEmail(emailbase);
-    getUserTable(emailbase).then(user => {
-      if (user) {
-        console.log('User Data:', user);
-        setUserId(user['Record ID']);
-        setClientId(user.Client);
-      }
-    })
-
-  }, [softrEmail]);
-
-  useEffect(() => {
     console.log('Client Id:', clientId);
     if (clientId) {
-      getClientTable(clientId[0]).then(infos => {
+      getClientTable(clientId).then(infos => {
         if (infos) {
           setBaseTable(infos.BaseCRM);
 
@@ -157,9 +151,16 @@ const SuggestionFeed = ({ softrEmail }) => {
     }
   }, [clientInfos])
 
+  useEffect(() => {
+    if (clientsCrm.length > 0) {
+      console.log('Clientes CRM carregados:', clientsCrm);
+    }
+  }, [clientsCrm])
+
   // Fetch all records on mount
   useEffect(() => {
     if (baseTable) {
+      setLoading(true);
       Airtable.configure({
         apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
       });
@@ -179,10 +180,15 @@ const SuggestionFeed = ({ softrEmail }) => {
           }
 
           setRecords(allRecords);
+
         }
       );
     }
   }, [baseTable]);
+
+  useEffect(() => {
+    loadClientsFromCRM();
+  }, []);
 
   // Paginação
   const totalPages = Math.ceil(records.length / PAGE_SIZE);
@@ -201,7 +207,23 @@ const SuggestionFeed = ({ softrEmail }) => {
     setShowPropertysList(true);
     setShowImageSelector(false);
     setTopMessage('Aqui estão as sugestões de imóveis que você pode considerar.');
+  };
 
+  const goBackToClientMenu = () => {
+    setShowChooseClient(true);
+    setShowPropertysList(false);
+    setShowImageSelector(false);
+    setSelectedProperty(null);
+    setClientName("");
+    setBaseTable("");
+    setRecords([]);
+    setClientInfos({
+      Email: "",
+      ClientId: "",
+      InvoiceId: "",
+      UserId: "",
+    });
+    setTopMessage('Selecione abaixo o imóvel para Virtual Staging.');
   };
 
   useEffect(() => {
@@ -211,9 +233,34 @@ const SuggestionFeed = ({ softrEmail }) => {
   return (
     <div>
       <div className='mt-3'>
-        <h3 className={`${styles.title_font}`}>{`Portal de Imóveis - ${clientName}`}</h3>
-        <p className={`${styles.paragraph_font}`}>{topMessage}</p>
+
+        {!showChooseClient &&
+          <div className={styles.headerContainer}>
+            <button 
+              className={styles.backButton}
+              onClick={goBackToClientMenu}
+              title="Voltar ao menu de clientes"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <h3 className={`${styles.title_font}`}>{`Portal de Imóveis - ${clientName}`}</h3>
+            <p className={`${styles.paragraph_font}`}>{topMessage}</p>
+          </div>}
+
         <div>
+          {showChooseClient && (
+            <ChooseClient
+              clientsCrm={clientsCrm}
+              setBaseTable={setBaseTable}
+              setClientName={setClientName}
+              setClientId={setClientId}
+              setShowChooseClient={setShowChooseClient}
+              setShowPropertysList={setShowPropertysList}
+            />
+          )}
+
           {showPropertysList && (
             <>
 
@@ -232,6 +279,7 @@ const SuggestionFeed = ({ softrEmail }) => {
               property={selectedProperty}
               client={clientInfos}
               closeImageSelector={closeImageSelector}
+              table={"Image suggestions"}
             />
           )}
 

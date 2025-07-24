@@ -249,7 +249,7 @@
 .formTitle {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #1a2233;
+  color: #68bf6c;
   margin-bottom: 0.7rem;
   text-align: left;
 }
@@ -293,6 +293,133 @@
 }
 
 
+/* Thumbnails das imagens selecionadas */
+.thumbnailsContainer {
+  margin-top: .5rem;
+  width: 100%;
+  max-width: 450px;
+}
+
+.thumbnailsTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #34495e;
+  margin-bottom: 0.8rem;
+  text-align: center;
+}
+
+.thumbnailsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+  max-width: 100%;
+  padding: 16px 0 16px 0;
+}
+
+.thumbnailBox {
+  position: relative;
+  width: 80px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: visible;
+  border: 2px solid #e6eaf0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
+}
+
+.thumbnailBox:hover {
+  border-color: #68bf6c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(104, 191, 108, 0.2);
+}
+
+.thumbnailActive {
+  border-color: #68bf6c !important;
+  box-shadow: 0 4px 12px rgba(104, 191, 108, 0.3) !important;
+  transform: translateY(-2px);
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s ease;
+  border-radius: 6px;
+}
+
+.thumbnailBox:hover .thumbnailImage {
+  transform: scale(1.05);
+}
+
+.removeThumbnailBtn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 24px;
+  height: 24px;
+  background: #ff4757;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  z-index: 10;
+  opacity: 0;
+  transform: scale(0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.thumbnailBox:hover .removeThumbnailBtn,
+.thumbnailActive .removeThumbnailBtn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.removeThumbnailBtn:hover {
+  background: #ff3742;
+  transform: scale(1.15);
+}
+
+.thumbnailActiveIndicator {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Responsividade para thumbnails */
+@media (max-width: 480px) {
+  .thumbnailsGrid {
+    gap: 1.2rem;
+    padding: 14px 0 14px 0;
+  }
+  
+  .thumbnailBox {
+    width: 70px;
+    height: 52px;
+  }
+  
+  .removeThumbnailBtn {
+    width: 20px;
+    height: 20px;
+    top: -5px;
+    right: -5px;
+  }
+  
+  .thumbnailActiveIndicator {
+    bottom: -5px;
+  }
+}
+
 /* Responsivo */
 @media (max-width: 900px) {
   .modalContentGrid {
@@ -331,6 +458,23 @@
   .formImageGrid {
     height: 140px;
     max-width: 100%;
+  }
+
+  /* Ajustes específicos para thumbnails em mobile */
+  .thumbnailsContainer {
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .thumbnailsGrid {
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 14px 0 16px 0;
+  }
+
+  .thumbnailBox {
+    flex-shrink: 0;
   }
 }
 

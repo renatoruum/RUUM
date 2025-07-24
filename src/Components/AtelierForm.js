@@ -13,8 +13,24 @@ const AtelierForm = ({
     handleNext,
     handleSubmit,
     selectedIndexes,
-    property
+    property,
+    onNavigateToImage,
+    onRemoveImage,
+    selectedModel, // Nova prop para determinar o título
+    estilosamb // Nova prop com os estilos de ambientação
 }) => {
+    // Função para obter o título correto baseado no modelo selecionado
+    const getFormTitle = () => {
+        switch (selectedModel) {
+            case 'restyle':
+                return 'RUUM ReStyle | Enviar nova imagem';
+            case 'project':
+                return 'RUUM Project | Enviar nova imagem';
+            case 'atelier':
+            default:
+                return 'RUUM Atelier | Enviar nova imagem';
+        }
+    };
     // Recupera o índice da imagem selecionada
     const selectedIndex = selectedIndexes[formIndex];
 
@@ -114,17 +130,79 @@ const AtelierForm = ({
         setAction("confirm");
     };
 
+    // Função para verificar se um formulário está preenchido
+    const isFormComplete = (form) => {
+        return form.estilo && form.tipo && form.acabamento && form.retirar;
+    };
+
     return (
-        <div className={formstyles.modalContentGrid}>
+        <div>
+            <div className={formstyles.modalContentGrid}>
             <div className={formstyles.leftCol}>
                 <div className={formstyles.formImageBoxGrid}>
                     <img src={currentForm.imgUrl} alt={`Selecionada ${formIndex + 1}`} className={formstyles.formImageGrid} />
                 </div>
                 <h4 className={formstyles.title}>Imagem {formIndex + 1} de {forms.length}</h4>
+                
+                {/* Thumbnails das imagens selecionadas */}
+                {forms.length > 1 && (
+                    <div className={formstyles.thumbnailsContainer}>
+                        <h6 className={formstyles.thumbnailsTitle}>Imagens selecionadas:</h6>
+                        <div className={formstyles.thumbnailsGrid}>
+                            {forms.map((form, idx) => (
+                                <div 
+                                    key={idx}
+                                    className={`${formstyles.thumbnailBox} ${idx === formIndex ? formstyles.thumbnailActive : ''}`}
+                                    onClick={() => {
+                                        // Navegar diretamente para a imagem clicada
+                                        if (idx !== formIndex && onNavigateToImage) {
+                                            onNavigateToImage(idx);
+                                        }
+                                    }}
+                                >
+                                    <img 
+                                        src={form.imgUrl} 
+                                        alt={`Thumbnail ${idx + 1}`} 
+                                        className={formstyles.thumbnailImage}
+                                    />
+                                    <button
+                                        type="button"
+                                        className={formstyles.removeThumbnailBtn}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Remoção direta da imagem
+                                            if (forms.length > 1) {
+                                                if (onRemoveImage) {
+                                                    onRemoveImage(idx);
+                                                }
+                                            } else {
+                                                alert('Não é possível remover a última imagem selecionada.');
+                                            }
+                                        }}
+                                        aria-label={`Remover imagem ${idx + 1}`}
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                            <line x1="13.5" y1="4.5" x2="4.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                                            <line x1="4.5" y1="4.5" x2="13.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                                        </svg>
+                                    </button>
+                                    {isFormComplete(form) && (
+                                        <div className={formstyles.thumbnailActiveIndicator}>
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                                <circle cx="10" cy="10" r="9" fill="#68bf6c" stroke="#fff" strokeWidth="2"/>
+                                                <polyline points="6,10 9,13 14,7" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
             <div className={formstyles.divider} />
             <div className={formstyles.rightCol} style={{ maxHeight: '80vh', overflowY: 'auto' }}>
-                <h2 className={styles.formTitle}>RUUM Atelier | Enviar nova imagem</h2>
+                <h2 className={styles.formTitle}>{getFormTitle()}</h2>
                 <h6 className={styles.formSubtitle}>Suba imagens na melhor qualidade possível. É preferível sem marca d'água.</h6>
                 <form className={styles.formAreaGrid} onSubmit={e => e.preventDefault()}>
                     <div className="mb-2">
@@ -330,7 +408,47 @@ const AtelierForm = ({
                     )}
                 </div>
             </div>
-        
+
+            {/* Seção de Estilos de Ambientação */}
+            <div className={styles.estilosSection}>
+                <h3 className={styles.estilosTitle}>Estilos de Ambientação</h3>
+                <p className={styles.estilosSubtitle}>Já conhece os estilos de ambientação Atelier? Escolha a opção desejada e selecione na página de envio acima.</p>
+                <div className={styles.estilosGrid}>
+                    {/* Primeira linha - 3 cards */}
+                    <div className={styles.estilosRow}>
+                        {estilosamb.slice(0, 3).map((estilo, index) => (
+                            <div key={index} className={styles.estiloCard}>
+                                <img 
+                                    src={estilo.img} 
+                                    alt={estilo.name}
+                                    className={styles.estiloImage}
+                                />
+                                <div className={styles.estiloContent}>
+                                    <h4 className={styles.estiloTitle}>{estilo.name}</h4>
+                                    <p className={styles.estiloDescription}>{estilo.description}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {/* Segunda linha - 2 cards */}
+                    <div className={styles.estilosRow}>
+                        {estilosamb.slice(3, 5).map((estilo, index) => (
+                            <div key={index + 3} className={styles.estiloCard}>
+                                <img 
+                                    src={estilo.img} 
+                                    alt={estilo.name}
+                                    className={styles.estiloImage}
+                                />
+                                <div className={styles.estiloContent}>
+                                    <h4 className={styles.estiloTitle}>{estilo.name}</h4>
+                                    <p className={styles.estiloDescription}>{estilo.description}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }
 

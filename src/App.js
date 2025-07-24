@@ -14,6 +14,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import Home from './Pages/Home';
 import SuggestionFeed from './Pages/SuggestionFeed';
 import VideoTour from './Pages/VideoTour';
+import ImobProperty from './Pages/ImobProperty';
 
 function App() {
   const [softrEmail, setSoftrEmail] = useState('');
@@ -28,13 +29,13 @@ function App() {
         setSoftrEmail(email);
       }
     };
-    
+
     // Registrar o listener de mensagens
     window.addEventListener('message', handleMessage);
-    
+
     // Verificar se estamos em um iframe
     const isInIframe = window.self !== window.top;
-    
+
     // Se estamos em um iframe, requisitar o email para o parent (Softr)
     // Usar um pequeno atraso para garantir que o parent está pronto
     if (isInIframe) {
@@ -46,7 +47,7 @@ function App() {
         }
       }, 500);
     }
-    
+
     // Verificar primeiro se temos o email no hash (prioridade mais alta)
     if (window.location.hash && window.location.hash.includes('@')) {
       const hashValue = window.location.hash.substring(1);
@@ -62,7 +63,7 @@ function App() {
         setSoftrEmail(emailFromQuery);
       }
     }
-    
+
     // Remover o listener quando o componente for desmontado
     return () => {
       window.removeEventListener('message', handleMessage);
@@ -79,13 +80,14 @@ function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
                 <Route path="/" element={<Home softrEmail={softrEmail} />} />
                 <Route path="/suggestionfeed" element={<SuggestionFeed softrEmail={softrEmail} />} />
+                <Route path="/imobproperty" element={<ImobProperty softrEmail={softrEmail} />} />
                 <Route path="/videotour" element={<VideoTour softrEmail={softrEmail} />} />
               </Routes>
             </BrowserRouter>
           </div>
         </div>
       </ClientPlanProvider>
-      
+
     </div>
   );
 }

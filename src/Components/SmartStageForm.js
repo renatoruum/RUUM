@@ -15,7 +15,10 @@ const SmartStageForm = ({
     handleNext,
     handleSubmit,
     selectedIndexes,
-    property
+    property,
+    onNavigateToImage,
+    onRemoveImage,
+    selectedModel
 }) => {
     const [openDialogBox, setOpenDialogBox] = useState(false);
     const [action, setAction] = useState('');
@@ -25,6 +28,16 @@ const SmartStageForm = ({
     const imgQty = forms.length;
     const credits = imgQty * 100;
     const selectedIndex = selectedIndexes[formIndex];
+
+    // Função para obter o título baseado no modelo selecionado
+    const getFormTitle = () => {
+        switch(selectedModel) {
+            case 'smartStage':
+                return 'SmartStage | Enviar nova imagem';
+            default:
+                return 'SmartStage | Enviar nova imagem';
+        }
+    };
 
     const actionScript = (act) => {
         setOpenDialogBox(false);
@@ -94,6 +107,11 @@ const SmartStageForm = ({
         handleSubmit();
     };
 
+    // Função para verificar se um formulário está preenchido
+    const isFormComplete = (form) => {
+        return form.tipo && form.retirar;
+    };
+
     return (
         <div className={styles.modalContentGrid}>
             <div className={styles.leftCol}>
@@ -101,10 +119,66 @@ const SmartStageForm = ({
                     <img src={currentForm.imgUrl} alt={`Selecionada ${formIndex + 1}`} className={styles.formImageGrid} />
                 </div>
                 <h4 className={styles.title}>Imagem {formIndex + 1} de {forms.length}</h4>
+                
+                {/* Thumbnails das imagens selecionadas */}
+                {forms.length > 1 && (
+                    <div className={styles.thumbnailsContainer}>
+                        <h6 className={styles.thumbnailsTitle}>Imagens selecionadas:</h6>
+                        <div className={styles.thumbnailsGrid}>
+                            {forms.map((form, idx) => (
+                                <div 
+                                    key={idx}
+                                    className={`${styles.thumbnailBox} ${idx === formIndex ? styles.thumbnailActive : ''}`}
+                                    onClick={() => {
+                                        // Navegar diretamente para a imagem clicada
+                                        if (idx !== formIndex && onNavigateToImage) {
+                                            onNavigateToImage(idx);
+                                        }
+                                    }}
+                                >
+                                    <img 
+                                        src={form.imgUrl} 
+                                        alt={`Thumbnail ${idx + 1}`} 
+                                        className={styles.thumbnailImage}
+                                    />
+                                    <button
+                                        type="button"
+                                        className={styles.removeThumbnailBtn}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Remoção direta da imagem
+                                            if (forms.length > 1) {
+                                                if (onRemoveImage) {
+                                                    onRemoveImage(idx);
+                                                }
+                                            } else {
+                                                alert('Não é possível remover a última imagem selecionada.');
+                                            }
+                                        }}
+                                        aria-label={`Remover imagem ${idx + 1}`}
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                            <line x1="13.5" y1="4.5" x2="4.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                                            <line x1="4.5" y1="4.5" x2="13.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                                        </svg>
+                                    </button>
+                                    {isFormComplete(form) && (
+                                        <div className={styles.thumbnailActiveIndicator}>
+                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                                <circle cx="10" cy="10" r="9" fill="#68bf6c" stroke="#fff" strokeWidth="2"/>
+                                                <polyline points="6,10 9,13 14,7" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
             <div className={styles.divider} />
             <div className={styles.rightCol} style={{ maxHeight: '80vh', overflowY: 'auto' }}>
-                <h2 className={styles.formTitle}>SmartStage | Enviar nova imagem</h2>
+                <h2 className={styles.formTitle}>{getFormTitle()}</h2>
                 <h6 className={styles.formSubtitle}>
                     Preencha o formulário para enviar nova imagem para processamento. Quanto melhor a qualidade da imagem enviada, melhor o resultado final ;)
                 </h6>
