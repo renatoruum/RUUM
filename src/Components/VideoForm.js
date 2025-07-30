@@ -18,7 +18,8 @@ const VideoForm = ({
     property,
     onNavigateToImage,
     onRemoveImage,
-    selectedModel
+    selectedModel,
+    table // Prop para identificar se é SuggestionFeed
 }) => {
     const [openDialogBox, setOpenDialogBox] = useState(false);
     const [action, setAction] = useState('');
@@ -28,6 +29,11 @@ const VideoForm = ({
     const imgQty = forms.length;
     const credits = imgQty * 200;
     const selectedIndex = selectedIndexes[formIndex];
+    
+    // Para SuggestionFeed, temos múltiplas imagens no currentForm.imgUrls
+    const isSuggestionFeed = table === "Image suggestions";
+    const displayImages = isSuggestionFeed ? currentForm?.imgUrls || [] : [currentForm?.imgUrl];
+    const mainDisplayImage = isSuggestionFeed ? displayImages[0] : currentForm?.imgUrl;
 
     // Função para obter o título baseado no modelo selecionado
     const getFormTitle = () => {
@@ -55,6 +61,12 @@ const VideoForm = ({
     }
 
     const handleOpenDialogBox = () => {
+        // Para SuggestionFeed, não mostrar modal de confirmação de créditos
+        if (table === "Image suggestions") {
+            handleSubmit();
+            return;
+        }
+        
         const msg = imgQty > 1
             ? `O processamento destas ${imgQty} imagens vai consumir ${credits} créditos do seu plano. Deseja continuar?`
             : `O processamento desta imagem vai consumir ${credits} créditos do seu plano. Deseja continuar?`;
@@ -121,64 +133,85 @@ const VideoForm = ({
         <div className={styles.modalContentGrid}>
             <div className={styles.leftCol}>
                 <div className={styles.formImageBoxGrid}>
-                    <img src={currentForm.imgUrl} alt={`Selecionada ${formIndex + 1}`} className={styles.formImageGrid} />
+                    <img src={mainDisplayImage} alt={`Selecionada ${formIndex + 1}`} className={styles.formImageGrid} />
                 </div>
-                <h4 className={styles.title}>Imagem {formIndex + 1} de {forms.length}</h4>
+                <h4 className={styles.title}>
+                    {isSuggestionFeed 
+                        ? `${displayImages.length} imagem${displayImages.length > 1 ? 's' : ''} selecionada${displayImages.length > 1 ? 's' : ''}`
+                        : `Imagem ${formIndex + 1} de ${forms.length}`
+                    }
+                </h4>
                 
-                {/* Thumbnails das imagens selecionadas */}
-                {forms.length > 1 && (
+                {/* Thumbnails das imagens selecionadas - Para SuggestionFeed, mostrar todas as imagens */}
+                {isSuggestionFeed && displayImages.length > 1 ? (
                     <div className={styles.thumbnailsContainer}>
-                        <h6 className={styles.thumbnailsTitle}>Imagens selecionadas:</h6>
+                        <h6 className={styles.thumbnailsTitle}>Todas as imagens selecionadas:</h6>
                         <div className={styles.thumbnailsGrid}>
-                            {forms.map((form, idx) => (
-                                <div 
-                                    key={idx}
-                                    className={`${styles.thumbnailBox} ${idx === formIndex ? styles.thumbnailActive : ''}`}
-                                    onClick={() => {
-                                        // Navegar diretamente para a imagem clicada
-                                        if (idx !== formIndex && onNavigateToImage) {
-                                            onNavigateToImage(idx);
-                                        }
-                                    }}
-                                >
-                                    <img 
-                                        src={form.imgUrl} 
-                                        alt={`Thumbnail ${idx + 1}`} 
+                            {displayImages.map((imgUrl, idx) => (
+                                <div key={idx} className={styles.thumbnailBox}>
+                                    <img
+                                        src={imgUrl}
+                                        alt={`Imagem ${idx + 1}`}
                                         className={styles.thumbnailImage}
                                     />
-                                    <button
-                                        type="button"
-                                        className={styles.removeThumbnailBtn}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            // Remoção direta da imagem
-                                            if (forms.length > 1) {
-                                                if (onRemoveImage) {
-                                                    onRemoveImage(idx);
-                                                }
-                                            } else {
-                                                alert('Não é possível remover a última imagem selecionada.');
-                                            }
-                                        }}
-                                        aria-label={`Remover imagem ${idx + 1}`}
-                                    >
-                                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                                            <line x1="13.5" y1="4.5" x2="4.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-                                            <line x1="4.5" y1="4.5" x2="13.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-                                        </svg>
-                                    </button>
-                                    {isFormComplete(form) && (
-                                        <div className={styles.thumbnailActiveIndicator}>
-                                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                                <circle cx="10" cy="10" r="9" fill="#68bf6c" stroke="#fff" strokeWidth="2"/>
-                                                <polyline points="6,10 9,13 14,7" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                            </svg>
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                         </div>
                     </div>
+                ) : (
+                    /* Thumbnails originais para outras rotas */
+                    forms.length > 1 && !isSuggestionFeed && (
+                        <div className={styles.thumbnailsContainer}>
+                            <h6 className={styles.thumbnailsTitle}>Imagens selecionadas:</h6>
+                            <div className={styles.thumbnailsGrid}>
+                                {forms.map((form, idx) => (
+                                    <div 
+                                        key={idx}
+                                        className={`${styles.thumbnailBox} ${idx === formIndex ? styles.thumbnailActive : ''}`}
+                                        onClick={() => {
+                                            if (idx !== formIndex && onNavigateToImage) {
+                                                onNavigateToImage(idx);
+                                            }
+                                        }}
+                                    >
+                                        <img 
+                                            src={form.imgUrl} 
+                                            alt={`Thumbnail ${idx + 1}`} 
+                                            className={styles.thumbnailImage}
+                                        />
+                                        <button
+                                            type="button"
+                                            className={styles.removeThumbnailBtn}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (forms.length > 1) {
+                                                    if (onRemoveImage) {
+                                                        onRemoveImage(idx);
+                                                    }
+                                                } else {
+                                                    alert('Não é possível remover a última imagem selecionada.');
+                                                }
+                                            }}
+                                            aria-label={`Remover imagem ${idx + 1}`}
+                                        >
+                                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                                <line x1="13.5" y1="4.5" x2="4.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                                                <line x1="4.5" y1="4.5" x2="13.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                                            </svg>
+                                        </button>
+                                        {isFormComplete(form) && (
+                                            <div className={styles.thumbnailActiveIndicator}>
+                                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                                    <circle cx="10" cy="10" r="9" fill="#68bf6c" stroke="#fff" strokeWidth="2"/>
+                                                    <polyline points="6,10 9,13 14,7" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )
                 )}
             </div>
             <div className={styles.divider} />
@@ -230,6 +263,40 @@ const VideoForm = ({
                             placeholder="Instruções específicas para o vídeo"
                         />
                     </div>
+                    
+                    {/* Campo Destaques - apenas para SuggestionFeed */}
+                    {table === "Image suggestions" && (
+                        <div className="mb-3">
+                            <label className="form-label d-flex text-start fw-bold">
+                                Destaques do imóvel (múltipla seleção)
+                            </label>
+                            <select
+                                className={`form-select ${styles.formSelect}`}
+                                value={currentForm.destaques || []}
+                                onChange={e => {
+                                    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                                    handleFormChange('destaques', selectedOptions);
+                                }}
+                                multiple
+                                style={{ minHeight: '120px' }}
+                            >
+                                {[
+                                    'Adição recente',
+                                    'Alto padrão',
+                                    'Localização de destaque',
+                                    'Precisa de reforma',
+                                    'Mobiliário desvalorizado',
+                                    'Alto potencial para ambientação'
+                                ].map((destaque) => (
+                                    <option key={destaque} value={destaque}>{destaque}</option>
+                                ))}
+                            </select>
+                            <small className="form-text text-muted">
+                                Segure Ctrl (Windows) ou Cmd (Mac) para selecionar múltiplas opções
+                            </small>
+                        </div>
+                    )}
+                    
                     <div className="mb-3">
                         <label className="form-label d-flex text-start fw-bold">
                             Código interno no imóvel na sua imobiliária
@@ -256,27 +323,8 @@ const VideoForm = ({
                         </h6>
                     </div>
                     <div className={styles.formNavGrid} style={{ marginTop: '2.2rem', padding: '0 1.2rem 1.2rem 1.2rem' }}>
-                        <button
-                            type="button"
-                            className="btn"
-                            style={{
-                                backgroundColor: '#fff',
-                                color: '#222',
-                                border: '2px solid #222',
-                                fontWeight: 600,
-                                fontSize: '1.1em',
-                                padding: '0.6em 1.2em',
-                                borderRadius: '8px',
-                                boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
-                                opacity: formIndex === 0 ? 0.7 : 1,
-                                width: '100%'
-                            }}
-                            onClick={handlePrev}
-                            disabled={formIndex === 0}
-                        >
-                            Anterior
-                        </button>
-                        {formIndex < forms.length - 1 ? (
+                        {/* Para SuggestionFeed, apenas mostrar botão Enviar */}
+                        {isSuggestionFeed ? (
                             <button
                                 type="button"
                                 className="btn"
@@ -292,32 +340,78 @@ const VideoForm = ({
                                     opacity: (!currentForm.modeloVideo || !currentForm.formatoVideo) ? 0.7 : 1,
                                     width: '100%'
                                 }}
-                                onClick={handleNext}
-                                disabled={!currentForm.modeloVideo || !currentForm.formatoVideo}
-                            >
-                                Próxima
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                className="btn"
-                                style={{
-                                    backgroundColor: '#68bf6c',
-                                    color: '#fff',
-                                    border: 'none',
-                                    fontWeight: 600,
-                                    fontSize: '1.1em',
-                                    padding: '0.6em 1.2em',
-                                    borderRadius: '8px',
-                                    boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
-                                    opacity: forms.some(f => !f.modeloVideo || !f.formatoVideo) ? 0.7 : 1,
-                                    width: '100%'
-                                }}
                                 onClick={handleOpenDialogBox}
-                                disabled={forms.some(f => !f.modeloVideo || !f.formatoVideo)}
+                                disabled={!currentForm.modeloVideo || !currentForm.formatoVideo}
                             >
                                 Enviar
                             </button>
+                        ) : (
+                            /* Navegação original para outras rotas */
+                            <>
+                                <button
+                                    type="button"
+                                    className="btn"
+                                    style={{
+                                        backgroundColor: '#fff',
+                                        color: '#222',
+                                        border: '2px solid #222',
+                                        fontWeight: 600,
+                                        fontSize: '1.1em',
+                                        padding: '0.6em 1.2em',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
+                                        opacity: formIndex === 0 ? 0.7 : 1,
+                                        width: '100%'
+                                    }}
+                                    onClick={handlePrev}
+                                    disabled={formIndex === 0}
+                                >
+                                    Anterior
+                                </button>
+                                {formIndex < forms.length - 1 ? (
+                                    <button
+                                        type="button"
+                                        className="btn"
+                                        style={{
+                                            backgroundColor: '#68bf6c',
+                                            color: '#fff',
+                                            border: 'none',
+                                            fontWeight: 600,
+                                            fontSize: '1.1em',
+                                            padding: '0.6em 1.2em',
+                                            borderRadius: '8px',
+                                            boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
+                                            opacity: (!currentForm.modeloVideo || !currentForm.formatoVideo) ? 0.7 : 1,
+                                            width: '100%'
+                                        }}
+                                        onClick={handleNext}
+                                        disabled={!currentForm.modeloVideo || !currentForm.formatoVideo}
+                                    >
+                                        Próxima
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className="btn"
+                                        style={{
+                                            backgroundColor: '#68bf6c',
+                                            color: '#fff',
+                                            border: 'none',
+                                            fontWeight: 600,
+                                            fontSize: '1.1em',
+                                            padding: '0.6em 1.2em',
+                                            borderRadius: '8px',
+                                            boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
+                                            opacity: forms.some(f => !f.modeloVideo || !f.formatoVideo) ? 0.7 : 1,
+                                            width: '100%'
+                                        }}
+                                        onClick={handleOpenDialogBox}
+                                        disabled={forms.some(f => !f.modeloVideo || !f.formatoVideo)}
+                                    >
+                                        Enviar
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 </form>

@@ -9,7 +9,7 @@ import Confetti from 'react-confetti';
 import { apiCall } from '../Config/Config';
 
 const ImageSelector = ({ property, client, closeImageSelector, table }) => {
-  console.log("Client infos:", client);
+  console.log("Property: ", property);
   const [images, setImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [step, setStep] = useState('select');
@@ -62,10 +62,22 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
   };
 
   const handleConfirmSelection = () => {
-    setForms(
-      selectedImages.map((imgUrl) => ({
-        imgUrl,
-        originalIndex: images.indexOf(imgUrl),
+    // Para SuggestionFeed, criar apenas um formulário para todas as imagens
+    if (table === "Image suggestions") {
+      const precoInicial = property?.fields?.Valor ?? '';
+      const enderecoInicial = (
+        property?.fields?.Bairro && property?.fields?.Cidade
+          ? property.fields.Bairro + ' - ' + property.fields.Cidade
+          : property?.fields?.Bairro ?? property?.fields?.Cidade ?? ''
+      );
+      
+      console.log('=== INICIALIZANDO FORMULÁRIO SUGGESTION FEED ===');
+      console.log('Preço inicial:', precoInicial);
+      console.log('Endereço inicial:', enderecoInicial);
+      
+      setForms([{
+        imgUrls: selectedImages, // Array de todas as imagens selecionadas
+        originalIndexes: selectedImages.map(imgUrl => images.indexOf(imgUrl)),
         estilo: '',
         tipo: '',
         acabamento: '',
@@ -74,20 +86,59 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
         imagensReferencia: '',
         modeloVideo: '',
         formatoVideo: '',
-        imgWorkflow: ''
-      }))
-    );
+        imgWorkflow: '',
+        preco: precoInicial,
+        endereco: enderecoInicial,
+        destaques: []
+      }]);
+    } else {
+      // Lógica original para outras rotas
+      setForms(
+        selectedImages.map((imgUrl) => ({
+          imgUrl,
+          originalIndex: images.indexOf(imgUrl),
+          estilo: '',
+          tipo: '',
+          acabamento: '',
+          retirar: '',
+          observacoes: '',
+          imagensReferencia: '',
+          modeloVideo: '',
+          formatoVideo: '',
+          imgWorkflow: '',
+          preco: '',
+          endereco: '',
+          destaques: []
+        }))
+      );
+    }
     setStep('form');
     setFormIndex(0);
     setShowFormModal(true);
   };
 
   const handleFormChange = (field, value) => {
-    setForms((prev) =>
-      prev.map((form, idx) =>
-        idx === formIndex ? { ...form, [field]: value } : form
-      )
-    );
+    console.log('=== HANDLE FORM CHANGE ===');
+    console.log('Field:', field);
+    console.log('Value:', value);
+    console.log('Table:', table);
+    
+    setForms((prev) => {
+      if (table === "Image suggestions") {
+        // Para SuggestionFeed, sempre atualizar o primeiro (e único) formulário
+        console.log('Atualizando formulário SuggestionFeed');
+        const updatedForms = prev.map((form, idx) =>
+          idx === 0 ? { ...form, [field]: value } : form
+        );
+        console.log('Forms atualizados:', updatedForms);
+        return updatedForms;
+      } else {
+        // Lógica original para outras rotas
+        return prev.map((form, idx) =>
+          idx === formIndex ? { ...form, [field]: value } : form
+        );
+      }
+    });
   };
 
   const handleNext = () => {
@@ -102,7 +153,7 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
     if (targetIndex >= 0 && targetIndex < forms.length) {
       setFormIndex(targetIndex);
     }
-  };
+  }
 
   const handleRemoveImage = (imageIndex) => {
     if (forms.length <= 1) {
@@ -127,34 +178,88 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
   };
 
   const handleSubmit = async () => {
-    console.log('Enviando formulários:', forms);
+    console.log('=== INÍCIO DO HANDLESUBMIT ===');
+    console.log('Table:', table);
+    console.log('Forms completos:', forms);
     console.log('Número de formulários:', forms.length);
     setSaving(true);
 
-    const imagesArray = forms.map((form, index) => {
-      console.log(`Processando formulário ${index + 1}:`, form);
-      const base = {
-        imgUrl: form.imgUrl,
-        tipo: form.tipo,         // Room Type
-        retirar: form.retirar,   // Decluttering
-        codigo: property?.fields?.Codigo || '',  // Client Internal Code
-        propertyUrl: property?.fields?.URL_Portal || '', // Property's URL
-        observacoes: form.observacoes, // Observations
-        estilo: form.estilo,     // Style
-        acabamento: form.acabamento, // Finish
-        imagensReferencia: form.imagensReferencia, // Reference Images
-        modeloVideo: form.modeloVideo, // Video Model
-        formatoVideo: form.formatoVideo, // Video Format
-        imgWorkflow: form.imgWorkflow
-      };
-      if (table === "Image suggestions") {
-        base.suggestionstatus = "Suggested";
-      }
-      return base;
-    });
+    let imagesArray;
 
+    // Para SuggestionFeed, processar de forma diferente
+    if (table === "Image suggestions") {
+      const form = forms[0]; // Único formulário para todas as imagens
+      console.log('=== PROCESSANDO SUGGESTION FEED ===');
+      console.log('Formulário único para SuggestionFeed:', form);
+      console.log('imgUrls do form:', form.imgUrls);
+      
+      imagesArray = [{
+        imgUrls: form.imgUrls, // Array de URLs das imagens
+        imgUrl: form.imgUrls[0], // Primeira imagem para compatibilidade com backend
+        tipo: form.tipo,
+        retirar: form.retirar,
+        codigo: property?.fields?.Codigo ?? '',
+        propertyUrl: property?.fields?.URL_Portal ?? '',
+        observacoes: form.observacoes,
+        estilo: form.estilo,
+        acabamento: form.acabamento,
+        imagensReferencia: form.imagensReferencia,
+        modeloVideo: form.modeloVideo,
+        formatoVideo: form.formatoVideo,
+        imgWorkflow: form.imgWorkflow,
+        suggestionstatus: "Suggested",
+        preco: form.preco || property?.fields?.Valor || '',
+        endereco: form.endereco || (
+          property?.fields?.Bairro && property?.fields?.Cidade
+            ? property.fields.Bairro + ' - ' + property.fields.Cidade
+            : property?.fields?.Bairro ?? property?.fields?.Cidade ?? ''
+        ),
+        destaques: form.destaques
+      }];
+      
+      console.log('=== VERIFICANDO CAMPOS DE IMAGEM ===');
+      console.log('imgUrl (primeira imagem):', imagesArray[0].imgUrl);
+      console.log('imgUrls (array completo):', imagesArray[0].imgUrls);
+      console.log('=== VERIFICANDO PRECO E ENDERECO ===');
+      console.log('form.preco:', form.preco);
+      console.log('property?.fields?.Valor:', property?.fields?.Valor);
+      console.log('preco final:', imagesArray[0].preco);
+      console.log('form.endereco:', form.endereco);
+      console.log('endereco final:', imagesArray[0].endereco);
+      console.log('=== VERIFICANDO DESTAQUES ===');
+      console.log('form.destaques:', form.destaques);
+      console.log('destaques final:', imagesArray[0].destaques);
+      console.log('tipo de destaques:', typeof form.destaques);
+      console.log('é array?:', Array.isArray(form.destaques));
+    } else {
+      // Lógica original para outras rotas
+      console.log('=== PROCESSANDO ROTAS NORMAIS ===');
+      imagesArray = forms.map((form, index) => {
+        console.log(`Processando formulário ${index + 1}:`, form);
+        console.log(`imgUrl do formulário ${index + 1}:`, form.imgUrl);
+        const base = {
+          imgUrl: form.imgUrl,
+          tipo: form.tipo,
+          retirar: form.retirar,
+          codigo: property?.fields?.Codigo ?? '',
+          propertyUrl: property?.fields?.URL_Portal ?? '',
+          observacoes: form.observacoes,
+          estilo: form.estilo,
+          acabamento: form.acabamento,
+          imagensReferencia: form.imagensReferencia,
+          modeloVideo: form.modeloVideo,
+          formatoVideo: form.formatoVideo,
+          imgWorkflow: form.imgWorkflow
+        };
+
+        console.log(`Base criada para formulário ${index + 1}:`, base);
+        return base;
+      });
+    }
+
+    console.log('=== RESULTADO FINAL ===');
     console.log('ImagesArray final:', imagesArray);
-    console.log('Quantidade de imagens no array:', imagesArray.length);
+    console.log('Quantidade de registros no array:', imagesArray.length);
 
     // Objeto para envio ao backend
     const requestData = {
@@ -361,6 +466,9 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
 
   // Renderização principal
   const currentForm = forms[formIndex];
+  
+  // Para SuggestionFeed, sempre usar o primeiro (e único) formulário
+  const activeForm = table === "Image suggestions" ? forms[0] : currentForm;
 
   return (
     <>
@@ -477,7 +585,7 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
               border: '2px solid #fff',
               zIndex: 10000
             }}>
-              Imagens enviadas para processamento!
+              {table === "Image suggestions" ? "Imagens enviadas para sugestão!" : "Imagens enviadas para processamento!"}
             </div>
           </>
         </Overlay>
@@ -532,18 +640,19 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
         <CustomModal show={showFormModal} onClose={handleModalClose}>
           <ChoosForm
             ref={choosFormRef}
-            currentForm={currentForm}
+            currentForm={activeForm}
             formIndex={formIndex}
             forms={forms}
             handleFormChange={handleFormChange}
             handlePrev={handlePrev}
             handleNext={handleNext}
             handleSubmit={handleSubmit}
-            selectedIndexes={forms.map(f => f.originalIndex)}
+            selectedIndexes={table === "Image suggestions" ? activeForm?.originalIndexes || [] : forms.map(f => f.originalIndex)}
             property={property}
             onNavigateToImage={handleNavigateToImage}
             onRemoveImage={handleRemoveImage}
             onOriginalClose={backToSelector}
+            table={table}
           />
         </CustomModal>
       )}

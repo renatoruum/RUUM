@@ -202,6 +202,8 @@ const ChoosForm = forwardRef((props, ref) => {
         selectedModel: selectedModel,
         // Pass estilos de ambientação para AtelierForm
         estilosamb: estilosamb,
+        // Pass table prop for SuggestionFeed logic
+        table: props.table,
         // Adicionar funcionalidades para thumbnails
         onNavigateToImage: props.onNavigateToImage || ((targetIndex) => {
             // Fallback para navegação sequencial se a função direta não estiver disponível
