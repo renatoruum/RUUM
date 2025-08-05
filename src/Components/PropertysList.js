@@ -68,18 +68,6 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
   // Verificação defensiva para garantir que propertyList é um array
   const safePropertyList = Array.isArray(propertyList) ? propertyList : [];
   
-  console.log('PropertysList - propertyList seguro, tamanho:', safePropertyList.length);
-  
-  // Examinar o primeiro item para debug
-  if (safePropertyList.length > 0) {
-    console.log('PropertysList - Amostra do primeiro item:', safePropertyList[0]);
-    console.log('PropertysList - Tipo do primeiro item:', typeof safePropertyList[0]);
-    console.log('PropertysList - Tem fields?', !!safePropertyList[0]?.fields);
-    if (typeof safePropertyList[0]?.get === 'function') {
-      console.log('PropertysList - É um objeto Airtable Record');
-      console.log('PropertysList - Fields via get():', safePropertyList[0].get('Valor'));
-    }
-  }
   
   // Filtro aplicado sobre a lista com verificação defensiva
   const filteredList = safePropertyList.filter((property) => {

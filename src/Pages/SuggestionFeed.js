@@ -29,7 +29,7 @@ const SuggestionFeed = () => {
   const [clientName, setClientName] = useState("");
   const [baseTable, setBaseTable] = useState("");
   const [userId, setUserId] = useState("");
-  const [clientEmail, setClientEmail] = useState("galia@acasa7.com.br");
+  const [clientEmail, setClientEmail] = useState("");
   const [clientInfos, setClientInfos] = useState({
     Email: "",
     ClientId: "",
