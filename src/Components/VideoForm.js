@@ -52,7 +52,6 @@ const VideoForm = ({
         setIsOpen(false);
         setAction("");
         setQuestionDialog("");
-        console.log("Action script called with action:", act);
         if (act === "Cancelar") {
             return;
         } else if (act === "Ok") {

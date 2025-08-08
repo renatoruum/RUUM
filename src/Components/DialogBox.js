@@ -4,11 +4,6 @@ import Modal from 'react-bootstrap/Modal';
 
 function DialogBox({ actionScript, action, questionDialog, optionsDialog }) {
 
-    console.log("action:", action);
-    console.log("ationScript:", actionScript);
-    console.log("questionDialog:", questionDialog);
-
-
     let actionChange;
 
     const handleCloseModal = (action) => {

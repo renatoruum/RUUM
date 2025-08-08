@@ -204,6 +204,8 @@ const ChoosForm = forwardRef((props, ref) => {
         estilosamb: estilosamb,
         // Pass table prop for SuggestionFeed logic
         table: props.table,
+        // Pass currentImageIndex for suggestion feed thumbnails
+        currentImageIndex: props.currentImageIndex,
         // Adicionar funcionalidades para thumbnails
         onNavigateToImage: props.onNavigateToImage || ((targetIndex) => {
             // Fallback para navegação sequencial se a função direta não estiver disponível

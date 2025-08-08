@@ -341,7 +341,6 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
             {paginatedList.map((property, idx) => {
               // Verificação defensiva para garantir que os campos existem
               if (!property) {
-                console.log('PropertysList - Item nulo/undefined encontrado no map');
                 return null;
               }
               

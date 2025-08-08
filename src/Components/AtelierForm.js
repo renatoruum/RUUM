@@ -8,6 +8,7 @@ const AtelierForm = ({
     currentForm,
     formIndex,
     forms,
+    currentImageIndex, // Novo prop para controlar imagem exibida na suggestion feed
     handleFormChange,
     handlePrev,
     handleNext,
@@ -36,28 +37,66 @@ const AtelierForm = ({
     // Recupera o índice da imagem selecionada
     const selectedIndex = selectedIndexes[formIndex];
 
-    // Para SuggestionFeed, temos múltiplas imagens no currentForm.imgUrls
+    // Para SuggestionFeed, temos múltiplas imagens no currentForm.inputImages
     const isSuggestionFeed = table === "Image suggestions";
+
+    // DEBUG: Ver exatamente que dados chegam
+    console.log("=== ATELIER FORM DEBUG ===");
+    console.log("table:", table);
+    console.log("isSuggestionFeed:", isSuggestionFeed);
+    console.log("openedFrom:", openedFrom);
+    console.log("currentForm:", currentForm);
+    console.log("currentForm?.inputImages:", currentForm?.inputImages);
+    console.log("currentForm?.imgUrls:", currentForm?.imgUrls);
+    console.log("forms:", forms);
+    console.log("forms length:", forms?.length);
+    if (forms && forms.length > 0) {
+        console.log("forms[0]:", forms[0]);
+        console.log("forms[0].imgUrl:", forms[0].imgUrl);
+        console.log("forms[0].imgUrls:", forms[0].imgUrls);
+        console.log("forms[0].inputImages:", forms[0].inputImages);
+    }
+    console.log("currentImageIndex:", currentImageIndex);
+    console.log("==========================");
+
+    // LÓGICA ROBUSTA PARA DETECTAR ESTRUTURA DE DADOS
+    // Detectar automaticamente qual estrutura usar baseado no que existe
+    let displayImages = [];
+    let mainDisplayImage = null;
     
-    // Definir as imagens a serem exibidas baseado na origem
-    let displayImages;
-    let mainDisplayImage;
-    let currentImageIndex = 0; // Índice da imagem sendo visualizada
-    
-    if (isSuggestionFeed && openedFrom === 'suggestions-feed') {
-        // Para formulários abertos do feed de sugestões, usar as imagens do campo INPUT IMAGE
-        displayImages = currentForm?.inputImages || [];
-        // Usar índice da imagem atual para mostrar a imagem correta
-        currentImageIndex = currentForm?.currentImageIndex || 0;
-        mainDisplayImage = displayImages[currentImageIndex] || displayImages[0] || currentForm?.imgUrl;
-    } else if (isSuggestionFeed) {
-        // Para outros SuggestionFeed, usar a lógica original
-        displayImages = currentForm?.imgUrls || [];
-        mainDisplayImage = displayImages[0] || currentForm?.imgUrl;
+    if (isSuggestionFeed) {
+        // Para suggestion feed, tentar diferentes estruturas na ordem de prioridade
+        if (currentForm?.imgUrls && Array.isArray(currentForm.imgUrls)) {
+            // Estrutura vinda do ImageSelector (/suggestionfeed)
+            displayImages = currentForm.imgUrls;
+            mainDisplayImage = currentForm.imgUrls[currentImageIndex || 0];
+            console.log("📁 USANDO: currentForm.imgUrls (ImageSelector)");
+        } else if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
+            // Estrutura vinda do Feed de Sugestões direto
+            displayImages = currentForm.inputImages;
+            mainDisplayImage = currentForm.inputImages[currentImageIndex || 0];
+            console.log("📁 USANDO: currentForm.inputImages (Feed direto)");
+        } else if (forms && forms.length > 0 && forms[0]?.imgUrls) {
+            // Fallback: tentar forms[0].imgUrls
+            displayImages = forms[0].imgUrls;
+            mainDisplayImage = forms[0].imgUrls[currentImageIndex || 0];
+            console.log("📁 USANDO: forms[0].imgUrls (Fallback)");
+        } else if (forms && forms.length > 0 && forms[0]?.inputImages) {
+            // Fallback: tentar forms[0].inputImages
+            displayImages = forms[0].inputImages;
+            mainDisplayImage = forms[0].inputImages[currentImageIndex || 0];
+            console.log("📁 USANDO: forms[0].inputImages (Fallback)");
+        } else {
+            // Último recurso: usar imgUrl único
+            displayImages = [currentForm?.imgUrl].filter(Boolean);
+            mainDisplayImage = currentForm?.imgUrl;
+            console.log("📁 USANDO: currentForm.imgUrl (Último recurso)");
+        }
     } else {
-        // Para formulários normais
-        displayImages = [currentForm?.imgUrl];
+        // Para rota normal - usar forms array
+        displayImages = [currentForm?.imgUrl].filter(Boolean);
         mainDisplayImage = currentForm?.imgUrl;
+        console.log("📁 USANDO: Rota normal - currentForm.imgUrl");
     }
 
     // Recupera o código interno do imóvel 
@@ -257,114 +296,110 @@ const AtelierForm = ({
                         }
                     </h4>
 
-                    {/* Thumbnails das imagens selecionadas - Para SuggestionFeed, mostrar todas as imagens */}
-                    {isSuggestionFeed && displayImages.length > 1 ? (
-                        <div className={formstyles.thumbnailsContainer}>
-                            <h6 className={formstyles.thumbnailsTitle}>Todas as imagens selecionadas:</h6>
-                            <div className={formstyles.thumbnailsGrid}>
-                                {displayImages.map((imgUrl, idx) => (
-                                    <div 
-                                        key={idx} 
-                                        className={`${formstyles.thumbnailBox} ${
-                                            openedFrom === 'suggestions-feed' && idx === currentImageIndex ? formstyles.thumbnailActive : ''
-                                        }`}
-                                        onClick={() => {
-                                            // Para feed de sugestões, permitir clique para mudar visualização
-                                            if (openedFrom === 'suggestions-feed') {
-                                                handleFormChange('currentImageIndex', idx);
-                                            }
-                                        }}
-                                        style={{ cursor: openedFrom === 'suggestions-feed' ? 'pointer' : 'default' }}
-                                    >
-                                        <img
-                                            src={imgUrl}
-                                            alt={`Imagem ${idx + 1}`}
-                                            className={formstyles.thumbnailImage}
-                                        />
-                                        {/* Botão de remover apenas para feed de sugestões */}
-                                        {openedFrom === 'suggestions-feed' && displayImages.length > 1 && (
+                    {/* THUMBNAILS - VERSÃO ROBUSTA */}
+                    {(() => {
+                        // Usar a mesma lógica robusta para detectar imagens
+                        let imagesToShow = [];
+                        let activeIndex = 0;
+
+                        if (isSuggestionFeed) {
+                            // Para suggestion feed, detectar automaticamente qual estrutura usar
+                            if (currentForm?.imgUrls && Array.isArray(currentForm.imgUrls)) {
+                                // Estrutura vinda do ImageSelector (/suggestionfeed)
+                                imagesToShow = currentForm.imgUrls;
+                                activeIndex = currentImageIndex || 0;
+                                console.log("🖼️ THUMBNAILS: currentForm.imgUrls");
+                            } else if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
+                                // Estrutura vinda do Feed de Sugestões direto
+                                imagesToShow = currentForm.inputImages;
+                                activeIndex = currentImageIndex || 0;
+                                console.log("🖼️ THUMBNAILS: currentForm.inputImages");
+                            } else if (forms && forms.length > 0 && forms[0]?.imgUrls) {
+                                // Fallback: tentar forms[0].imgUrls
+                                imagesToShow = forms[0].imgUrls;
+                                activeIndex = currentImageIndex || 0;
+                                console.log("🖼️ THUMBNAILS: forms[0].imgUrls");
+                            } else if (forms && forms.length > 0 && forms[0]?.inputImages) {
+                                // Fallback: tentar forms[0].inputImages
+                                imagesToShow = forms[0].inputImages;
+                                activeIndex = currentImageIndex || 0;
+                                console.log("🖼️ THUMBNAILS: forms[0].inputImages");
+                            }
+                        } else {
+                            // Para rota normal: usar forms array
+                            imagesToShow = forms.map(form => form.imgUrl).filter(Boolean);
+                            activeIndex = formIndex || 0;
+                            console.log("🖼️ THUMBNAILS: Rota normal - forms array");
+                        }
+
+                        // DEBUG
+                        console.log("THUMBNAILS DEBUG:", {
+                            isSuggestionFeed,
+                            imagesToShow,
+                            activeIndex,
+                            shouldShow: imagesToShow.length > 1
+                        });
+
+                        // Mostrar thumbnails se tiver mais de 1 imagem
+                        if (imagesToShow.length > 1) {
+                            return (
+                                <div className={formstyles.thumbnailsContainer}>
+                                    <div className={formstyles.thumbnailsGrid}>
+                                        {imagesToShow.map((imgUrl, index) => (
+                                            <div
+                                                key={`thumb-${index}`}
+                                                className={`${formstyles.thumbnailBox} ${
+                                                    index === activeIndex ? formstyles.thumbnailActive : ''
+                                                }`}
+                                            onClick={() => {
+                                                if (isSuggestionFeed) {
+                                                    onNavigateToImage && onNavigateToImage(index);
+                                                } else {
+                                                    // Para rota normal, navegar usando handlePrev/handleNext
+                                                    const diff = index - formIndex;
+                                                    if (diff > 0) {
+                                                        for (let i = 0; i < diff; i++) {
+                                                            handleNext && handleNext();
+                                                        }
+                                                    } else if (diff < 0) {
+                                                        for (let i = 0; i < Math.abs(diff); i++) {
+                                                            handlePrev && handlePrev();
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            <img 
+                                                src={imgUrl} 
+                                                alt={`Thumbnail ${index + 1}`} 
+                                                className={formstyles.thumbnailImage}
+                                            />
                                             <button
-                                                type="button"
                                                 className={formstyles.removeThumbnailBtn}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    // Remover imagem do array
-                                                    const newImages = displayImages.filter((_, imgIdx) => imgIdx !== idx);
-                                                    handleFormChange('inputImages', newImages);
-                                                    // Ajustar índice atual se necessário
-                                                    if (idx === currentImageIndex && currentImageIndex > 0) {
-                                                        handleFormChange('currentImageIndex', currentImageIndex - 1);
-                                                    } else if (idx < currentImageIndex) {
-                                                        handleFormChange('currentImageIndex', currentImageIndex - 1);
+                                                    if (isSuggestionFeed) {
+                                                        onRemoveImage && onRemoveImage(index);
+                                                    } else {
+                                                        // Para rota normal não implementamos remoção por thumbnail
+                                                        alert('Remoção por thumbnail não disponível nesta rota.');
                                                     }
                                                 }}
-                                                aria-label={`Remover imagem ${idx + 1}`}
+                                                aria-label={`Remover imagem ${index + 1}`}
                                             >
                                                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                                                     <line x1="13.5" y1="4.5" x2="4.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
                                                     <line x1="4.5" y1="4.5" x2="13.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
                                                 </svg>
                                             </button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        /* Thumbnails originais para outras rotas */
-                        forms.length > 1 && !isSuggestionFeed && (
-                            <div className={formstyles.thumbnailsContainer}>
-                                <h6 className={formstyles.thumbnailsTitle}>Imagens selecionadas:</h6>
-                                <div className={formstyles.thumbnailsGrid}>
-                                    {forms.map((form, idx) => (
-                                        <div
-                                            key={idx}
-                                            className={`${formstyles.thumbnailBox} ${idx === formIndex ? formstyles.thumbnailActive : ''}`}
-                                            onClick={() => {
-                                                if (idx !== formIndex && onNavigateToImage) {
-                                                    onNavigateToImage(idx);
-                                                }
-                                            }}
-                                        >
-                                            <img
-                                                src={form.imgUrl}
-                                                alt={`Thumbnail ${idx + 1}`}
-                                                className={formstyles.thumbnailImage}
-                                            />
-                                            <button
-                                                type="button"
-                                                className={formstyles.removeThumbnailBtn}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (forms.length > 1) {
-                                                        if (onRemoveImage) {
-                                                            onRemoveImage(idx);
-                                                        }
-                                                    } else {
-                                                        alert('Não é possível remover a última imagem selecionada.');
-                                                    }
-                                                }}
-                                                aria-label={`Remover imagem ${idx + 1}`}
-                                            >
-                                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                                                    <line x1="13.5" y1="4.5" x2="4.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                                                    <line x1="4.5" y1="4.5" x2="13.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                                                </svg>
-                                            </button>
-                                            {isFormComplete(form) && (
-                                                <div className={formstyles.thumbnailActiveIndicator}>
-                                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                                        <circle cx="10" cy="10" r="9" fill="#68bf6c" stroke="#fff" strokeWidth="2" />
-                                                        <polyline points="6,10 9,13 14,7" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                    </svg>
-                                                </div>
-                                            )}
                                         </div>
                                     ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )
-                    )}
+                            );
+                        }
+                        return null;
+                    })()}
                 </div>
                 <div className={formstyles.divider} />
                 <div className={formstyles.rightCol} style={{ maxHeight: '80vh', overflowY: 'auto' }}>

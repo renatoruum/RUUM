@@ -50,12 +50,6 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
   const [imageLoaded, setImageLoaded] = useState({});
   const [showFilters, setShowFilters] = useState(window.innerWidth > 600);
 
-  console.log('PropertysList - Recebeu propertyList:', propertyList);
-  console.log('PropertysList - propertyList é array?', Array.isArray(propertyList));
-  console.log('PropertysList - Tamanho da propertyList:', propertyList?.length);
-  console.log('PropertysList - Loading status:', loading);
-  console.log('PropertysList - itemsToShow:', itemsToShow);
-
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 600) setShowFilters(true);
@@ -68,26 +62,15 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
   // Verificação defensiva para garantir que propertyList é um array
   const safePropertyList = Array.isArray(propertyList) ? propertyList : [];
   
-  // Inspecionar alguns itens da lista para debug
-  if (safePropertyList.length > 0) {
-    console.log('PropertysList - Primeiro item da lista:', safePropertyList[0]);
-    console.log('PropertysList - Segundo item da lista (se existir):', safePropertyList[1]);
-    console.log('PropertysList - fields do primeiro item:', safePropertyList[0]?.fields);
-    console.log('PropertysList - Tipo do primeiro item:', typeof safePropertyList[0]);
-    console.log('PropertysList - _rawJson?', safePropertyList[0]?._rawJson);
-  }
-  
   // Filtro aplicado sobre a lista
   const filteredList = safePropertyList.filter((property) => {
     // Verificar se property existe
     if (!property) {
-      console.log('PropertysList - Item nulo/undefined encontrado');
       return false;
     }
     
     // Verificar se é um objeto Airtable Record ou se tem os campos necessários
     if (!property.fields) {
-      console.log('PropertysList - Item sem fields encontrado:', property);
       return false;
     }
     

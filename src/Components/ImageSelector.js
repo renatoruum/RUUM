@@ -8,8 +8,15 @@ import styles from './ImageSelector.module.css';
 import Confetti from 'react-confetti';
 import { apiCall } from '../Config/Config';
 
-const ImageSelector = ({ property, client, closeImageSelector, table }) => {
-  console.log("Property: ", property);
+const ImageSelector = ({ 
+  property, 
+  client, 
+  closeImageSelector, 
+  table,
+  currentImageIndex = 0,
+  onNavigateToImage,
+  onRemoveImage 
+}) => {
   const [images, setImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [step, setStep] = useState('select');
@@ -71,10 +78,6 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
           : property?.fields?.Bairro ?? property?.fields?.Cidade ?? ''
       );
       
-      console.log('=== INICIALIZANDO FORMULÁRIO SUGGESTION FEED ===');
-      console.log('Preço inicial:', precoInicial);
-      console.log('Endereço inicial:', enderecoInicial);
-      
       setForms([{
         imgUrls: selectedImages, // Array de todas as imagens selecionadas
         originalIndexes: selectedImages.map(imgUrl => images.indexOf(imgUrl)),
@@ -118,19 +121,12 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
   };
 
   const handleFormChange = (field, value) => {
-    console.log('=== HANDLE FORM CHANGE ===');
-    console.log('Field:', field);
-    console.log('Value:', value);
-    console.log('Table:', table);
-    
     setForms((prev) => {
       if (table === "Image suggestions") {
         // Para SuggestionFeed, sempre atualizar o primeiro (e único) formulário
-        console.log('Atualizando formulário SuggestionFeed');
         const updatedForms = prev.map((form, idx) =>
           idx === 0 ? { ...form, [field]: value } : form
         );
-        console.log('Forms atualizados:', updatedForms);
         return updatedForms;
       } else {
         // Lógica original para outras rotas
@@ -150,38 +146,76 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
   };
 
   const handleNavigateToImage = (targetIndex) => {
-    if (targetIndex >= 0 && targetIndex < forms.length) {
-      setFormIndex(targetIndex);
+    if (table === "Image suggestions") {
+      // Para suggestion feed, usar a função do componente pai se disponível
+      if (onNavigateToImage) {
+        onNavigateToImage(targetIndex);
+      } else {
+        console.log("ImageSelector handleNavigateToImage for suggestion feed:", targetIndex);
+        // Fallback: não fazemos nada aqui, o controle está no componente pai
+      }
+    } else {
+      // Para rotas normais, navegar entre forms
+      if (targetIndex >= 0 && targetIndex < forms.length) {
+        setFormIndex(targetIndex);
+      }
     }
   }
 
   const handleRemoveImage = (imageIndex) => {
-    if (forms.length <= 1) {
-      alert('Não é possível remover a última imagem selecionada.');
-      return;
-    }
+    if (table === "Image suggestions") {
+      // Para suggestion feed, remover imagem do array dentro do único formulário
+      const currentForm = forms[0];
+      if (!currentForm || !currentForm.imgUrls || currentForm.imgUrls.length <= 1) {
+        alert('Não é possível remover a última imagem selecionada.');
+        return;
+      }
 
-    // Remover a imagem do array de forms
-    const newForms = forms.filter((_, index) => index !== imageIndex);
-    setForms(newForms);
+      // Remover a imagem do array imgUrls
+      const newImgUrls = currentForm.imgUrls.filter((_, index) => index !== imageIndex);
+      const newOriginalIndexes = currentForm.originalIndexes.filter((_, index) => index !== imageIndex);
+      
+      // Atualizar o formulário
+      const updatedForm = {
+        ...currentForm,
+        imgUrls: newImgUrls,
+        originalIndexes: newOriginalIndexes
+      };
+      
+      setForms([updatedForm]);
+      
+      // Atualizar também as imagens selecionadas
+      setSelectedImages(newImgUrls);
 
-    // Também remover das imagens selecionadas
-    const removedImageUrl = forms[imageIndex].imgUrl;
-    setSelectedImages(prev => prev.filter(url => url !== removedImageUrl));
+      // Notificar o componente pai se a função estiver disponível
+      if (onRemoveImage) {
+        onRemoveImage(imageIndex);
+      }
+    } else {
+      // Lógica original para outras rotas
+      if (forms.length <= 1) {
+        alert('Não é possível remover a última imagem selecionada.');
+        return;
+      }
 
-    // Ajustar o formIndex se necessário
-    if (imageIndex < formIndex) {
-      setFormIndex(formIndex - 1);
-    } else if (imageIndex === formIndex && formIndex >= newForms.length) {
-      setFormIndex(newForms.length - 1);
+      // Remover a imagem do array de forms
+      const newForms = forms.filter((_, index) => index !== imageIndex);
+      setForms(newForms);
+
+      // Também remover das imagens selecionadas
+      const removedImageUrl = forms[imageIndex].imgUrl;
+      setSelectedImages(prev => prev.filter(url => url !== removedImageUrl));
+
+      // Ajustar o formIndex se necessário
+      if (imageIndex < formIndex) {
+        setFormIndex(formIndex - 1);
+      } else if (imageIndex === formIndex && formIndex >= newForms.length) {
+        setFormIndex(newForms.length - 1);
+      }
     }
   };
 
   const handleSubmit = async () => {
-    console.log('=== INÍCIO DO HANDLESUBMIT ===');
-    console.log('Table:', table);
-    console.log('Forms completos:', forms);
-    console.log('Número de formulários:', forms.length);
     setSaving(true);
 
     let imagesArray;
@@ -189,9 +223,6 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
     // Para SuggestionFeed, processar de forma diferente
     if (table === "Image suggestions") {
       const form = forms[0]; // Único formulário para todas as imagens
-      console.log('=== PROCESSANDO SUGGESTION FEED ===');
-      console.log('Formulário único para SuggestionFeed:', form);
-      console.log('imgUrls do form:', form.imgUrls);
       
       imagesArray = [{
         imgUrls: form.imgUrls, // Array de URLs das imagens
@@ -217,27 +248,9 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
         ),
         destaques: form.destaques
       }];
-      
-      console.log('=== VERIFICANDO CAMPOS DE IMAGEM ===');
-      console.log('imgUrl (primeira imagem):', imagesArray[0].imgUrl);
-      console.log('imgUrls (array completo):', imagesArray[0].imgUrls);
-      console.log('=== VERIFICANDO PRECO E ENDERECO ===');
-      console.log('form.preco:', form.preco);
-      console.log('property?.fields?.Valor:', property?.fields?.Valor);
-      console.log('preco final:', imagesArray[0].preco);
-      console.log('form.endereco:', form.endereco);
-      console.log('endereco final:', imagesArray[0].endereco);
-      console.log('=== VERIFICANDO DESTAQUES ===');
-      console.log('form.destaques:', form.destaques);
-      console.log('destaques final:', imagesArray[0].destaques);
-      console.log('tipo de destaques:', typeof form.destaques);
-      console.log('é array?:', Array.isArray(form.destaques));
     } else {
       // Lógica original para outras rotas
-      console.log('=== PROCESSANDO ROTAS NORMAIS ===');
       imagesArray = forms.map((form, index) => {
-        console.log(`Processando formulário ${index + 1}:`, form);
-        console.log(`imgUrl do formulário ${index + 1}:`, form.imgUrl);
         const base = {
           imgUrl: form.imgUrl,
           imgUrls: [form.imgUrl], // Array de uma imagem para manter compatibilidade
@@ -255,18 +268,9 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
           imgWorkflow: form.imgWorkflow
         };
 
-        console.log(`Base criada para formulário ${index + 1}:`, base);
-        console.log(`=== VERIFICANDO CAMPOS DE IMAGEM FORMULÁRIO ${index + 1} ===`);
-        console.log(`imgUrl:`, base.imgUrl);
-        console.log(`imgUrls:`, base.imgUrls);
-        console.log(`INPUT IMAGES:`, base["INPUT IMAGES"]);
         return base;
       });
     }
-
-    console.log('=== RESULTADO FINAL ===');
-    console.log('ImagesArray final:', imagesArray);
-    console.log('Quantidade de registros no array:', imagesArray.length);
 
     // Objeto para envio ao backend
     const requestData = {
@@ -278,16 +282,12 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
       table: table || "Images"
     };
 
-    console.log('Enviando dados para o backend:', requestData);
-    console.log('Tamanho do payload:', JSON.stringify(requestData).length, 'bytes');
-
     try {
       const data = await apiCall("/api/update-images-airtable", {
         method: "POST",
         body: JSON.stringify(requestData)
       });
 
-      console.log('Resposta do backend:', data);
       setSaving(false);
       if (data) {
         setShowConfetti(true);
@@ -300,14 +300,9 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
       }
     } catch (err) {
       setSaving(false);
-      console.error('Erro detalhado:', err);
-      console.error('RequestData que causou o erro:', requestData);
-      console.error('Número de imagens no requestData:', requestData.imagesArray.length);
 
       // Tentar identificar qual imagem pode estar causando o problema
       if (requestData.imagesArray.length > 1) {
-        console.log('Tentando enviar uma imagem por vez para identificar o problema...');
-
         setUploadProgress({ current: 0, total: requestData.imagesArray.length, message: 'Enviando imagens individualmente...' });
 
         const results = [];
@@ -327,14 +322,11 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
               imagesArray: [requestData.imagesArray[i]]
             };
 
-            console.log(`Enviando imagem ${i + 1} de ${requestData.imagesArray.length}:`, singleImageData);
-
             const singleResult = await apiCall("/api/update-images-airtable", {
               method: "POST",
               body: JSON.stringify(singleImageData)
             });
 
-            console.log(`Imagem ${i + 1} enviada com sucesso:`, singleResult);
             results.push({ index: i, success: true, data: singleResult });
             successCount++;
 
@@ -342,18 +334,14 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
             await new Promise(resolve => setTimeout(resolve, 2000)); // Aumentado para 2 segundos
 
           } catch (singleErr) {
-            console.error(`Erro na imagem ${i + 1}:`, singleErr);
             results.push({ index: i, success: false, error: singleErr.message });
             errorCount++;
           }
         }
 
-        console.log('Resultados do envio individual:', results);
-
         // Tentar reenviar imagens que falharam
         const failedImages = results.filter(r => !r.success);
         if (failedImages.length > 0 && successCount > 0) {
-          console.log(`Tentando reenviar ${failedImages.length} imagem(ns) que falharam...`);
 
           setUploadProgress({
             current: 0,
@@ -370,8 +358,6 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
                 message: `Reenviando imagem ${failed.index + 1}... (${j + 1}/${failedImages.length})`
               });
 
-              console.log(`Reenviando imagem ${failed.index + 1}...`);
-
               const retryImageData = {
                 ...requestData,
                 imagesArray: [requestData.imagesArray[failed.index]]
@@ -381,8 +367,6 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
                 method: "POST",
                 body: JSON.stringify(retryImageData)
               });
-
-              console.log(`Imagem ${failed.index + 1} reenviada com sucesso:`, retryResult);
 
               // Atualizar o resultado
               const resultIndex = results.findIndex(r => r.index === failed.index);
@@ -394,14 +378,11 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
               await new Promise(resolve => setTimeout(resolve, 3000));
 
             } catch (retryErr) {
-              console.error(`Erro no reenvio da imagem ${failed.index + 1}:`, retryErr);
             }
           }
         }
 
         setUploadProgress({ current: 0, total: 0, message: '' });
-
-        console.log('Resultados finais após tentativas:', results);
 
         if (successCount > 0) {
           const message = errorCount === 0
@@ -650,6 +631,7 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
             currentForm={activeForm}
             formIndex={formIndex}
             forms={forms}
+            currentImageIndex={currentImageIndex} // Passar currentImageIndex para suggestion feed
             handleFormChange={handleFormChange}
             handlePrev={handlePrev}
             handleNext={handleNext}

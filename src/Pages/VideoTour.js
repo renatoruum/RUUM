@@ -187,7 +187,6 @@ const VideoTour = () => {
             ...prev,
             promptText: newPrompt
         }));
-        console.log('✅ Prompt do vídeo atualizado automaticamente:', newPrompt);
     };
 
     const handleRunwayFormChange = (field, value) => {
@@ -234,7 +233,6 @@ const VideoTour = () => {
                 })
             });
 
-            console.log('Script gerado:', response);
             const script = response.data?.result || response.result || response.data?.script || response.script || response.message;
             setGeneratedScript(script);
             setOriginalScript(script);
@@ -244,8 +242,6 @@ const VideoTour = () => {
                 ...prev,
                 promptImage: runwayForm.promptImage
             }));
-
-            console.log('✅ Script gerado e URL sincronizada:', script);
 
         } catch (error) {
             console.error('Erro ao gerar script:', error);
@@ -290,13 +286,6 @@ const VideoTour = () => {
                 model: "eleven_multilingual_v2"
             };
 
-            console.log('=== TTS REQUEST OTIMIZADO ===');
-            console.log('Enviando payload para TTS:', payload);
-            console.log('Tamanho do texto:', generatedScript.length, 'caracteres');
-            console.log('Headers que serão enviados:', apiHeaders);
-            console.log('Timestamp:', new Date().toISOString());
-            console.log('============================');
-
             // Usar fetch direto para TTS que pode retornar blob
             const audioResponse = await fetch(`${API_CONFIG.BASE_URL}/api/elevenlabs/text-to-speech`, {
                 method: "POST",
@@ -315,8 +304,6 @@ const VideoTour = () => {
             if (contentType && contentType.includes('application/json')) {
                 // Resposta JSON com URL
                 const jsonResponse = await audioResponse.json();
-                console.log('✅ TTS bem-sucedido! (JSON)');
-                console.log('Resposta do áudio:', jsonResponse);
                 
                 const publicAudioUrl = jsonResponse.url || jsonResponse.data?.url || jsonResponse.audioUrl;
                 
@@ -325,16 +312,12 @@ const VideoTour = () => {
                 }
                 
                 setAudioUrl(publicAudioUrl);
-                console.log('Áudio gerado com sucesso - URL pública:', publicAudioUrl);
             } else {
                 // Resposta é um arquivo de áudio - criar blob URL
                 const audioBlob = await audioResponse.blob();
-                console.log('✅ TTS bem-sucedido! (Blob)');
-                console.log('Tamanho do áudio:', audioBlob.size, 'bytes');
                 
                 const audioBlobUrl = URL.createObjectURL(audioBlob);
                 setAudioUrl(audioBlobUrl);
-                console.log('Áudio gerado com sucesso - Blob URL:', audioBlobUrl);
             }
 
         } catch (error) {
@@ -371,12 +354,6 @@ const VideoTour = () => {
                 voice: selectedVoice,
                 model: "eleven_multilingual_v2"
             };
-
-            console.log('=== TTS TESTE OTIMIZADO ===');
-            console.log('Testando TTS com payload simples:', testPayload);
-            console.log('Headers que serão enviados:', apiHeaders);
-            console.log('Timestamp:', new Date().toISOString());
-            console.log('==========================');
 
             // Usar fetch direto para TTS que pode retornar blob
             const audioResponse = await fetch(`${API_CONFIG.BASE_URL}/api/elevenlabs/text-to-speech`, {

@@ -25,7 +25,6 @@ function App() {
       // Caso principal: A mensagem é um objeto contendo softrUserEmail (formato preferido)
       if (event.data && typeof event.data === 'object' && event.data.softrUserEmail) {
         const email = event.data.softrUserEmail;
-        console.log('Email recebido via postMessage:', email);
         setSoftrEmail(email);
       }
     };

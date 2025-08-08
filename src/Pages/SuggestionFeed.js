@@ -37,6 +37,7 @@ const SuggestionFeed = () => {
     UserId: "",
   });
   const [clientsCrm, setClientsCrm] = useState([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0); // Para controlar qual imagem está sendo exibida na suggestion feed
 
   var client = {
     Email: "galia@acasa7.com.br",
@@ -53,8 +54,6 @@ const SuggestionFeed = () => {
     });
     const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
 
-    console.log('Carregando clientes da tabela Clients...');
-
     try {
       const records = await base('Clients')
         .select({
@@ -70,7 +69,6 @@ const SuggestionFeed = () => {
       }));
 
       setClientsCrm(clientsData);
-      console.log('Clientes carregados:', clientsData);
 
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
@@ -92,8 +90,6 @@ const SuggestionFeed = () => {
       apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
     });
     const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
-
-    console.log('Buscando tabela do cliente:', clientid);
 
     try {
       const records = await base('Clients')
@@ -122,7 +118,6 @@ const SuggestionFeed = () => {
   };
 
   useEffect(() => {
-    console.log('Client Id:', clientId);
     if (clientId) {
       getClientTable(clientId).then(infos => {
         if (infos) {
@@ -141,19 +136,16 @@ const SuggestionFeed = () => {
 
   useEffect(() => {
     if (clientName) {
-      console.log('Client Name changed:', clientName[0]);
     }
   }, [clientName])
 
   useEffect(() => {
     if (clientInfos) {
-      console.log('Client Infos:', clientInfos);
     }
   }, [clientInfos])
 
   useEffect(() => {
     if (clientsCrm.length > 0) {
-      console.log('Clientes CRM carregados:', clientsCrm);
     }
   }, [clientsCrm])
 
@@ -196,7 +188,6 @@ const SuggestionFeed = () => {
 
   // Handle property selection
   const selectProperty = (property) => {
-    console.log('Property selected:', property);
     setSelectedProperty(property);
     setShowPropertysList(false);
     setShowImageSelector(true);
@@ -207,7 +198,24 @@ const SuggestionFeed = () => {
     setSelectedProperty(null);
     setShowPropertysList(true);
     setShowImageSelector(false);
+    setCurrentImageIndex(0); // Resetar índice da imagem
     setTopMessage('Aqui estão as sugestões de imóveis que você pode considerar.');
+  };
+
+  // Funções para controle de imagens na suggestion feed
+  const handleNavigateToImage = (index) => {
+    // Para suggestion feed no ImageSelector, navegar entre imagens do formulário
+    setCurrentImageIndex(index);
+  };
+
+  const handleRemoveImage = (index) => {
+    // Esta função será gerenciada pelo ImageSelector
+    // Apenas resetar o currentImageIndex se necessário
+    if (index === currentImageIndex && currentImageIndex > 0) {
+      setCurrentImageIndex(currentImageIndex - 1);
+    } else if (index < currentImageIndex) {
+      setCurrentImageIndex(currentImageIndex - 1);
+    }
   };
 
   const goBackToClientMenu = () => {
@@ -281,6 +289,9 @@ const SuggestionFeed = () => {
               client={clientInfos}
               closeImageSelector={closeImageSelector}
               table={"Image suggestions"}
+              currentImageIndex={currentImageIndex}
+              onNavigateToImage={handleNavigateToImage}
+              onRemoveImage={handleRemoveImage}
             />
           )}
 

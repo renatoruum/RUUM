@@ -83,6 +83,7 @@ const ImobProperty = ({ softrEmail }) => {
     const [selectedSuggestion, setSelectedSuggestion] = useState(null);
     const [suggestionForms, setSuggestionForms] = useState([]);
     const [suggestionFormIndex, setSuggestionFormIndex] = useState(0);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0); // Para controlar qual imagem está sendo exibida na suggestion feed
 
     var client = {
         Email: "galia@acasa7.com.br",
@@ -188,11 +189,7 @@ const ImobProperty = ({ softrEmail }) => {
 
     // Carregar sugestões da tabela "Image suggestions"
     useEffect(() => {
-        console.log('🚀 useEffect de sugestões executado!');
-        console.log('📋 clientInfos.ClientId:', clientInfos.ClientId);
-        
         if (clientInfos.ClientId) {
-            console.log('✅ ClientId disponível, iniciando consulta Airtable');
             Airtable.configure({
                 apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
             });
@@ -206,19 +203,11 @@ const ImobProperty = ({ softrEmail }) => {
                 })
                 .eachPage(
                     function page(records, fetchNextPage) {
-                        console.log('📥 Recebendo página com', records.length, 'registros');
-                        records.forEach((record, index) => {
-                            console.log(`📝 Registro ${index + 1}:`, record.id);
-                            console.log('🔍 Campos disponíveis:', Object.keys(record.fields));
-                            console.log('🎨 Campo STYLE direto:', record.fields['STYLE']);
-                            console.log('📊 Todos os campos:', record.fields);
-                        });
                         allSuggestions = allSuggestions.concat(records);
                         fetchNextPage();
                     },
                     async function done(err) {
                         if (err) {
-                            console.error('Erro ao carregar sugestões:', err);
                             // Tentar uma abordagem alternativa se a primeira falhar
                             base('Image suggestions')
                                 .select({
@@ -226,12 +215,6 @@ const ImobProperty = ({ softrEmail }) => {
                                 })
                                 .eachPage(
                                     function page(records, fetchNextPage) {
-                                        console.log('📥 Recebendo página (alternativa) com', records.length, 'registros');
-                                        records.forEach((record, index) => {
-                                            console.log(`📝 Registro alternativo ${index + 1}:`, record.id);
-                                            console.log('🔍 Campos disponíveis (alt):', Object.keys(record.fields));
-                                            console.log('🎨 Campo STYLE direto (alt):', record.fields['STYLE']);
-                                        });
                                         // Filtrar no lado do cliente
                                         const filteredRecords = records.filter(record => {
                                             const clientsField = record.fields['Clients'];
@@ -249,7 +232,6 @@ const ImobProperty = ({ softrEmail }) => {
                                     },
                                     async function done(err2) {
                                         if (err2) {
-                                            console.error('Erro na abordagem alternativa:', err2);
                                             return;
                                         }
                                         // Agrupar sugestões por imóvel
@@ -265,68 +247,46 @@ const ImobProperty = ({ softrEmail }) => {
                     }
                 );
         } else {
-            console.log('❌ ClientId não disponível ainda');
         }
     }, [clientInfos.ClientId]);
 
     // Função para buscar nome do estilo pelo ID
     const getStyleName = async (styleId) => {
         try {
-            console.log('🔍 Buscando estilo para ID:', styleId);
-            console.log('🔑 API Key disponível:', !!process.env.REACT_APP_AIRTABLE_API_KEY);
-            console.log('🏗️ Base ID disponível:', !!process.env.REACT_APP_AIRTABLE_BASE_ID);
-            
             Airtable.configure({
                 apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
             });
             const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
             
-            console.log('📞 Fazendo chamada para Airtable tabela "Styles"...');
             const record = await base('Styles').find(styleId);
-            console.log('✅ Registro encontrado na tabela "Styles":', record);
-            console.log('✅ Campos do registro:', record.fields);
-            console.log('📝 Style Name:', record.fields['Style Name']);
-            console.log('🏷️ Style Token:', record.fields['Style Token']);
             
             const styleName = record.fields['Style Name'] || record.fields['Style Token'] || null;
-            console.log('🎯 Nome final do estilo:', styleName);
             return styleName;
         } catch (error) {
-            console.error('❌ Erro ao buscar nome do estilo:', error);
-            console.error('❌ Detalhes do erro:', error.message);
             return null;
         }
     };
 
     // Função para agrupar sugestões por imóvel
     const groupSuggestionsByProperty = async (suggestions) => {
-        console.log('🏠 Iniciando agrupamento de', suggestions.length, 'sugestões');
         const grouped = {};
         
         for (const suggestion of suggestions) {
             const fields = suggestion.fields;
-            console.log('📋 Processando sugestão:', suggestion.id, 'com campos:', Object.keys(fields));
             
             // Filtrar apenas registros com Suggestion Status = "Suggested"
             if (fields['Suggestion Status'] !== 'Suggested') {
-                console.log('⏭️ Pulando sugestão com status:', fields['Suggestion Status']);
                 continue; // Pular este registro
             }
             
             const propertyCode = fields['Client Internal Code'] || 'Sem código';
-            console.log('🏷️ Código do imóvel:', propertyCode);
             
             if (!grouped[propertyCode]) {
                 // Buscar nome do estilo se STYLE existir
                 let estiloName = null;
-                console.log('🎨 Campo STYLE:', fields['STYLE']);
-                console.log('🎨 Tipo do campo STYLE:', typeof fields['STYLE']);
-                console.log('🎨 É array?', Array.isArray(fields['STYLE']));
                 
                 if (fields['STYLE'] && Array.isArray(fields['STYLE']) && fields['STYLE'].length > 0) {
-                    console.log('🔍 Buscando estilo para ID:', fields['STYLE'][0]);
                     estiloName = await getStyleName(fields['STYLE'][0]);
-                    console.log('✅ Nome do estilo obtido:', estiloName);
                 }
                 
                 grouped[propertyCode] = {
@@ -342,8 +302,6 @@ const ImobProperty = ({ softrEmail }) => {
                     // Armazenar os IDs originais das sugestões para referência
                     originalSuggestionIds: []
                 };
-                
-                console.log('🏠 Propriedade criada:', grouped[propertyCode]);
             }
             
             // Adicionar ID da sugestão original
@@ -360,7 +318,6 @@ const ImobProperty = ({ softrEmail }) => {
             }
         }
         
-        console.log('📊 Resultado final do agrupamento:', Object.values(grouped));
         // Converter objeto para array
         return Object.values(grouped);
     };
@@ -382,7 +339,6 @@ const ImobProperty = ({ softrEmail }) => {
                 function done(err) {
                     setLoading(false);
                     if (err) {
-                        console.error('Error fetching records:', err);
                         return;
                     }
 
@@ -419,24 +375,9 @@ const ImobProperty = ({ softrEmail }) => {
                         (typeof property.estilo === 'string' && property.estilo.trim() !== '');
         const isAtelier = hasStyle;
         
-        console.log('=== DEBUG SUGGESTION SELECTION ===');
-        console.log('Property:', property);
-        console.log('Property.estilo:', property.estilo);
-        console.log('Property.estilo type:', typeof property.estilo);
-        console.log('HasStyle:', hasStyle);
-        console.log('IsAtelier:', isAtelier);
-        console.log('=====================================');
-        
-        // Para feed de sugestões, criar apenas UM formulário único para todas as imagens
-        const forms = [{
-            // Usar a primeira imagem como imgUrl para compatibilidade
-            imgUrl: property.images[0]?.url || '',
-            originalIndex: 0,
-            suggestionId: property.images[0]?.suggestionId || '',
-            // Array com todas as imagens do INPUT IMAGE
-            inputImages: property.images.map(img => img.url),
-            currentImageIndex: 0, // Iniciar com a primeira imagem
-            // Campos básicos
+        // Para suggestion feed, criar UM ÚNICO FORMULÁRIO com array de imagens (como estava antes)
+        const initialForm = {
+            inputImages: property.images.map(img => img.url), // Array com todas as URLs das imagens
             tipo: '', // Será preenchido pelo usuário
             codigoInterno: property.propertyCode,
             endereco: property.address,
@@ -445,6 +386,7 @@ const ImobProperty = ({ softrEmail }) => {
             // Campos específicos adicionais para pré-preenchimento
             codigo: property.propertyCode, // Client Internal Code - Código do Imóvel
             propertyUrl: property.propertyUrl || '', // Property's URL - Link da página do imóvel
+            originalSuggestionIds: property.originalSuggestionIds, // IDs das sugestões originais
             
             // Campos específicos baseados no tipo de formulário
             ...(isAtelier ? {
@@ -458,7 +400,7 @@ const ImobProperty = ({ softrEmail }) => {
                 acabamento: property.acabamento || '', // Finish → Acabamento / RUUM Project
                 retirar: property.retirar || ''       // Retirar → Decluttering / RUUM Restyle
             })
-        }];
+        };
 
         // Criar objeto simulando propriedade
         const suggestionProperty = {
@@ -474,13 +416,10 @@ const ImobProperty = ({ softrEmail }) => {
             }
         };
         
-        console.log('=== FINAL SUGGESTION PROPERTY ===');
-        console.log('suggestionProperty.fields.IsAtelier:', suggestionProperty.fields.IsAtelier);
-        console.log('================================');
-        
         setSelectedSuggestion(suggestionProperty);
-        setSuggestionForms(forms);
+        setSuggestionForms([initialForm]); // Um único formulário com array de imagens
         setSuggestionFormIndex(0);
+        setCurrentImageIndex(0); // Resetar índice da imagem
         setShowPropertysList(false);
         setShowSuggestionForm(true);
         setTopMessage(`Configure as opções de Virtual Staging (${isAtelier ? 'Atelier' : 'SmartStage'}) para este imóvel sugerido.`);
@@ -490,6 +429,7 @@ const ImobProperty = ({ softrEmail }) => {
         setSelectedSuggestion(null);
         setSuggestionForms([]);
         setSuggestionFormIndex(0);
+        setCurrentImageIndex(0); // Resetar índice da imagem
         setShowPropertysList(true);
         setShowSuggestionForm(false);
         setTopMessage('Aqui estão as sugestões de imóveis que você pode considerar.');
@@ -513,44 +453,61 @@ const ImobProperty = ({ softrEmail }) => {
     };
 
     const handleSuggestionNavigateToImage = (index) => {
-        setSuggestionFormIndex(index);
+        // Para suggestion feed, navegar entre imagens do mesmo formulário
+        if (suggestionForms.length > 0 && suggestionForms[0].inputImages) {
+            if (index >= 0 && index < suggestionForms[0].inputImages.length) {
+                setCurrentImageIndex(index);
+            }
+        }
     };
 
     const handleSuggestionRemoveImage = (index) => {
-        if (suggestionForms.length > 1) {
-            setSuggestionForms(prev => prev.filter((_, idx) => idx !== index));
-            if (suggestionFormIndex >= index && suggestionFormIndex > 0) {
-                setSuggestionFormIndex(prev => prev - 1);
+        if (suggestionForms.length > 0 && suggestionForms[0].inputImages) {
+            const currentForm = suggestionForms[0];
+            
+            if (currentForm.inputImages.length <= 1) {
+                alert('Não é possível remover a última imagem selecionada.');
+                return;
+            }
+
+            // Remover a imagem do array
+            const newImages = currentForm.inputImages.filter((_, idx) => idx !== index);
+            const updatedForm = { ...currentForm, inputImages: newImages };
+            setSuggestionForms([updatedForm]);
+
+            // Ajustar o currentImageIndex se necessário
+            if (index === currentImageIndex && currentImageIndex > 0) {
+                setCurrentImageIndex(currentImageIndex - 1);
+            } else if (index < currentImageIndex) {
+                setCurrentImageIndex(currentImageIndex - 1);
             }
         }
     };
 
     const handleSuggestionSubmit = async (formData) => {
-        console.log('=== INÍCIO DO HANDLE SUGGESTION SUBMIT ===');
-        console.log('Dados do formulário de sugestão:', formData);
-        
         try {
-            // Criar array de imagens no formato correto
-            const imagesArray = [{
-                imgUrls: formData.inputImages || [], // Array de URLs das imagens
-                imgUrl: formData.inputImages?.[0] || '', // Primeira imagem para compatibilidade
-                "INPUT IMAGES": formData.inputImages || [], // Campo específico para o Airtable
-                tipo: formData.tipo,
-                retirar: formData.retirar,
-                codigo: formData.codigo || '',
-                propertyUrl: formData.propertyUrl || '',
-                observacoes: formData.observacoes,
-                estilo: formData.estilo,
-                acabamento: formData.acabamento,
-                imagensReferencia: formData.imagensReferencia,
-                modeloVideo: formData.modeloVideo,
-                formatoVideo: formData.formatoVideo,
-                imgWorkflow: formData.imgWorkflow,
+            // Para suggestion feed, pegar as imagens do array inputImages
+            const currentForm = suggestionForms[0];
+            const imagesArray = currentForm.inputImages.map(imageUrl => ({
+                imgUrls: [imageUrl], // Array com a URL da imagem
+                imgUrl: imageUrl, // URL da imagem
+                "INPUT IMAGES": [imageUrl], // Campo específico para o Airtable
+                tipo: currentForm.tipo,
+                retirar: currentForm.retirar,
+                codigo: currentForm.codigo || '',
+                propertyUrl: currentForm.propertyUrl || '',
+                observacoes: currentForm.observacoes,
+                estilo: currentForm.estilo,
+                acabamento: currentForm.acabamento,
+                imagensReferencia: currentForm.imagensReferencia,
+                modeloVideo: currentForm.modeloVideo,
+                formatoVideo: currentForm.formatoVideo,
+                imgWorkflow: currentForm.imgWorkflow,
                 suggestionstatus: "Suggested",
-                preco: formData.preco || '',
-                endereco: formData.endereco || '',
-                destaques: formData.destaques || []
-            }];
+                preco: currentForm.preco || '',
+                endereco: currentForm.endereco || '',
+                destaques: currentForm.destaques || []
+            }));
 
             // Objeto para envio ao backend - incluindo Clients
             const requestData = {
@@ -561,10 +518,6 @@ const ImobProperty = ({ softrEmail }) => {
                 userId: clientInfos?.UserId,
                 table: "Image suggestions"
             };
-
-            console.log('=== DADOS PARA ENVIO ===');
-            console.log('Request data:', requestData);
-            console.log('Cliente ID:', clientInfos?.ClientId);
 
             // Fazer o POST request
             const response = await fetch(`${process.env.REACT_APP_CLOUD_FUNCTION_URL}uploadimg-airtable-ruum`, {
@@ -577,22 +530,16 @@ const ImobProperty = ({ softrEmail }) => {
 
             if (response.ok) {
                 const result = await response.json();
-                console.log('✅ Formulário enviado com sucesso:', result);
                 closeSuggestionForm();
             } else {
-                console.error('❌ Erro no envio:', response.statusText);
                 alert('Erro ao enviar formulário. Tente novamente.');
             }
         } catch (error) {
-            console.error('❌ Erro no handleSuggestionSubmit:', error);
             alert('Erro ao enviar formulário. Tente novamente.');
         }
     };
 
     useEffect(() => {
-        if(suggestionRecords){
-            console.log('Sugestões carregadas:', suggestionRecords);
-        }
     }, [suggestionRecords])
 
     useEffect(() => {
@@ -729,6 +676,7 @@ const ImobProperty = ({ softrEmail }) => {
                                     currentForm={suggestionForms[suggestionFormIndex]}
                                     formIndex={suggestionFormIndex}
                                     forms={suggestionForms}
+                                    currentImageIndex={currentImageIndex} // Para controle da imagem exibida
                                     handleFormChange={handleSuggestionFormChange}
                                     handlePrev={handleSuggestionPrev}
                                     handleNext={handleSuggestionNext}
@@ -747,6 +695,7 @@ const ImobProperty = ({ softrEmail }) => {
                                     currentForm={suggestionForms[suggestionFormIndex]}
                                     formIndex={suggestionFormIndex}
                                     forms={suggestionForms}
+                                    currentImageIndex={currentImageIndex} // Para controle da imagem exibida
                                     handleFormChange={handleSuggestionFormChange}
                                     handlePrev={handleSuggestionPrev}
                                     handleNext={handleSuggestionNext}
