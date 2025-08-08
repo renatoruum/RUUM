@@ -212,6 +212,11 @@ const ImageSelector = ({
       } else if (imageIndex === formIndex && formIndex >= newForms.length) {
         setFormIndex(newForms.length - 1);
       }
+
+      // Notificar o componente pai se a função estiver disponível
+      if (onRemoveImage) {
+        onRemoveImage(imageIndex);
+      }
     }
   };
 
@@ -638,7 +643,19 @@ const ImageSelector = ({
             handleSubmit={handleSubmit}
             selectedIndexes={table === "Image suggestions" ? activeForm?.originalIndexes || [] : forms.map(f => f.originalIndex)}
             property={property}
-            onNavigateToImage={handleNavigateToImage}
+            onNavigateToImage={onNavigateToImage ? (targetIndex) => {
+              // Se o componente pai forneceu onNavigateToImage, usar essa função
+              if (table === "Image suggestions") {
+                // Para suggestion feed, chamar a função do pai
+                onNavigateToImage(targetIndex);
+              } else {
+                // Para outras rotas, navegar internamente E chamar a função do pai
+                if (targetIndex >= 0 && targetIndex < forms.length) {
+                  setFormIndex(targetIndex);
+                }
+                onNavigateToImage(targetIndex);
+              }
+            } : handleNavigateToImage}
             onRemoveImage={handleRemoveImage}
             onOriginalClose={backToSelector}
             table={table}

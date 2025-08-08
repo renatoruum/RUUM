@@ -40,24 +40,6 @@ const AtelierForm = ({
     // Para SuggestionFeed, temos múltiplas imagens no currentForm.inputImages
     const isSuggestionFeed = table === "Image suggestions";
 
-    // DEBUG: Ver exatamente que dados chegam
-    console.log("=== ATELIER FORM DEBUG ===");
-    console.log("table:", table);
-    console.log("isSuggestionFeed:", isSuggestionFeed);
-    console.log("openedFrom:", openedFrom);
-    console.log("currentForm:", currentForm);
-    console.log("currentForm?.inputImages:", currentForm?.inputImages);
-    console.log("currentForm?.imgUrls:", currentForm?.imgUrls);
-    console.log("forms:", forms);
-    console.log("forms length:", forms?.length);
-    if (forms && forms.length > 0) {
-        console.log("forms[0]:", forms[0]);
-        console.log("forms[0].imgUrl:", forms[0].imgUrl);
-        console.log("forms[0].imgUrls:", forms[0].imgUrls);
-        console.log("forms[0].inputImages:", forms[0].inputImages);
-    }
-    console.log("currentImageIndex:", currentImageIndex);
-    console.log("==========================");
 
     // LÓGICA ROBUSTA PARA DETECTAR ESTRUTURA DE DADOS
     // Detectar automaticamente qual estrutura usar baseado no que existe
@@ -70,33 +52,27 @@ const AtelierForm = ({
             // Estrutura vinda do ImageSelector (/suggestionfeed)
             displayImages = currentForm.imgUrls;
             mainDisplayImage = currentForm.imgUrls[currentImageIndex || 0];
-            console.log("📁 USANDO: currentForm.imgUrls (ImageSelector)");
         } else if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
             // Estrutura vinda do Feed de Sugestões direto
             displayImages = currentForm.inputImages;
             mainDisplayImage = currentForm.inputImages[currentImageIndex || 0];
-            console.log("📁 USANDO: currentForm.inputImages (Feed direto)");
         } else if (forms && forms.length > 0 && forms[0]?.imgUrls) {
             // Fallback: tentar forms[0].imgUrls
             displayImages = forms[0].imgUrls;
             mainDisplayImage = forms[0].imgUrls[currentImageIndex || 0];
-            console.log("📁 USANDO: forms[0].imgUrls (Fallback)");
         } else if (forms && forms.length > 0 && forms[0]?.inputImages) {
             // Fallback: tentar forms[0].inputImages
             displayImages = forms[0].inputImages;
             mainDisplayImage = forms[0].inputImages[currentImageIndex || 0];
-            console.log("📁 USANDO: forms[0].inputImages (Fallback)");
         } else {
             // Último recurso: usar imgUrl único
             displayImages = [currentForm?.imgUrl].filter(Boolean);
             mainDisplayImage = currentForm?.imgUrl;
-            console.log("📁 USANDO: currentForm.imgUrl (Último recurso)");
         }
     } else {
         // Para rota normal - usar forms array
         displayImages = [currentForm?.imgUrl].filter(Boolean);
         mainDisplayImage = currentForm?.imgUrl;
-        console.log("📁 USANDO: Rota normal - currentForm.imgUrl");
     }
 
     // Recupera o código interno do imóvel 
@@ -308,37 +284,25 @@ const AtelierForm = ({
                                 // Estrutura vinda do ImageSelector (/suggestionfeed)
                                 imagesToShow = currentForm.imgUrls;
                                 activeIndex = currentImageIndex || 0;
-                                console.log("🖼️ THUMBNAILS: currentForm.imgUrls");
                             } else if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
                                 // Estrutura vinda do Feed de Sugestões direto
                                 imagesToShow = currentForm.inputImages;
                                 activeIndex = currentImageIndex || 0;
-                                console.log("🖼️ THUMBNAILS: currentForm.inputImages");
                             } else if (forms && forms.length > 0 && forms[0]?.imgUrls) {
                                 // Fallback: tentar forms[0].imgUrls
                                 imagesToShow = forms[0].imgUrls;
                                 activeIndex = currentImageIndex || 0;
-                                console.log("🖼️ THUMBNAILS: forms[0].imgUrls");
                             } else if (forms && forms.length > 0 && forms[0]?.inputImages) {
                                 // Fallback: tentar forms[0].inputImages
                                 imagesToShow = forms[0].inputImages;
                                 activeIndex = currentImageIndex || 0;
-                                console.log("🖼️ THUMBNAILS: forms[0].inputImages");
                             }
                         } else {
                             // Para rota normal: usar forms array
                             imagesToShow = forms.map(form => form.imgUrl).filter(Boolean);
                             activeIndex = formIndex || 0;
-                            console.log("🖼️ THUMBNAILS: Rota normal - forms array");
                         }
 
-                        // DEBUG
-                        console.log("THUMBNAILS DEBUG:", {
-                            isSuggestionFeed,
-                            imagesToShow,
-                            activeIndex,
-                            shouldShow: imagesToShow.length > 1
-                        });
 
                         // Mostrar thumbnails se tiver mais de 1 imagem
                         if (imagesToShow.length > 1) {
@@ -352,10 +316,11 @@ const AtelierForm = ({
                                                     index === activeIndex ? formstyles.thumbnailActive : ''
                                                 }`}
                                             onClick={() => {
-                                                if (isSuggestionFeed) {
+                                                if (isSuggestionFeed || onNavigateToImage) {
+                                                    // Navegação direta para suggestion feed OU quando onNavigateToImage está disponível
                                                     onNavigateToImage && onNavigateToImage(index);
                                                 } else {
-                                                    // Para rota normal, navegar usando handlePrev/handleNext
+                                                    // Para rota normal sem onNavigateToImage, navegar usando handlePrev/handleNext
                                                     const diff = index - formIndex;
                                                     if (diff > 0) {
                                                         for (let i = 0; i < diff; i++) {
@@ -378,10 +343,11 @@ const AtelierForm = ({
                                                 className={formstyles.removeThumbnailBtn}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    if (isSuggestionFeed) {
+                                                    if (isSuggestionFeed || onRemoveImage) {
+                                                        // Remoção para suggestion feed OU quando onRemoveImage está disponível
                                                         onRemoveImage && onRemoveImage(index);
                                                     } else {
-                                                        // Para rota normal não implementamos remoção por thumbnail
+                                                        // Para rota normal sem onRemoveImage
                                                         alert('Remoção por thumbnail não disponível nesta rota.');
                                                     }
                                                 }}

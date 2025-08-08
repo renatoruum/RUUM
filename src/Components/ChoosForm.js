@@ -209,6 +209,7 @@ const ChoosForm = forwardRef((props, ref) => {
         // Adicionar funcionalidades para thumbnails
         onNavigateToImage: props.onNavigateToImage || ((targetIndex) => {
             // Fallback para navegação sequencial se a função direta não estiver disponível
+            console.log('ChoosForm fallback navigation to index:', targetIndex);
             const difference = targetIndex - props.formIndex;
             if (difference > 0) {
                 // Navegar para frente

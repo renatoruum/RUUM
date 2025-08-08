@@ -356,6 +356,7 @@ const ImobProperty = ({ softrEmail }) => {
     const selectProperty = (property) => {
         setSelectedProperty(property);
         setShowPropertysList(false);
+        setCurrentImageIndex(0); // Reset para a primeira imagem
         setShowImageSelector(true);
         setTopMessage('Selecione as imagens que você quer aplicar Virtual Staging.');
     };
@@ -484,6 +485,23 @@ const ImobProperty = ({ softrEmail }) => {
         }
     };
 
+    // Função para navegar diretamente para uma imagem específica na rota normal
+    const handleNavigateToImage = (targetIndex) => {
+        // Não precisamos fazer nada aqui - o controle será feito pelo ImageSelector
+        // A navegação será direta via setFormIndex no ImageSelector
+        console.log('ImobProperty handleNavigateToImage called with:', targetIndex);
+    };
+
+    // Função para remover imagem na rota normal
+    const handleRemoveImage = (imageIndex) => {
+        // Para rota normal, ajustar o currentImageIndex se necessário
+        if (imageIndex === currentImageIndex && currentImageIndex > 0) {
+            setCurrentImageIndex(currentImageIndex - 1);
+        } else if (imageIndex < currentImageIndex) {
+            setCurrentImageIndex(currentImageIndex - 1);
+        }
+    };
+
     const handleSuggestionSubmit = async (formData) => {
         try {
             // Para suggestion feed, pegar as imagens do array inputImages
@@ -550,10 +568,12 @@ const ImobProperty = ({ softrEmail }) => {
         <div>
             <div className='mt-3'>
                 <h3 className={`${styles.title_font}`}>{`Portal de Imóveis - ${clientName}`}</h3>
-                <p className={`${styles.paragraph_font}`}>{topMessage}</p>
+                <p className={`${styles.paragraph_font}`}>{showImageSelector ? "Selecione as imagens que você quer aplicar Virtual Staging." : topMessage}</p>
                 
-                {/* Div de Sugestões com scroll horizontal */}
-                {suggestionRecords.length > 0 && (
+                {!showImageSelector && (
+                    <>
+                        {/* Div de Sugestões com scroll horizontal */}
+                        {suggestionRecords.length > 0 && (
                     <div className={styles.suggestionsSection}>
                         <h5 className={styles.suggestionsTitle}>
                             Imóveis com potencial de valorização 🤩 ({suggestionRecords.length} {suggestionRecords.length === 1 ? 'imóvel' : 'imóveis'})
@@ -647,29 +667,37 @@ const ImobProperty = ({ softrEmail }) => {
                     </div>
                 )}
 
-                <div>
-                    {showPropertysList && (
-                        <>
+                        <div>
+                            {showPropertysList && (
+                                <>
 
-                            <PropertysList
-                                propertyList={records}
-                                selectProperty={selectProperty}
-                                itemsToShow={itemsToShow}
-                                setItemsToShow={setItemsToShow}
-                                loading={loading}
-                            />
+                                    <PropertysList
+                                        propertyList={records}
+                                        selectProperty={selectProperty}
+                                        itemsToShow={itemsToShow}
+                                        setItemsToShow={setItemsToShow}
+                                        loading={loading}
+                                    />
 
-                        </>
-                    )}
-                    {showImageSelector && (
-                        <ImageSelector
-                            property={selectedProperty}
-                            client={clientInfos}
-                            closeImageSelector={closeImageSelector}
-                            table={"Images"}
-                        />
-                    )}
-                    {showSuggestionForm && suggestionForms.length > 0 && selectedSuggestion && (
+                                </>
+                            )}
+                        </div>
+                    </>
+                )}
+                
+                {showImageSelector && (
+                    <ImageSelector
+                        property={selectedProperty}
+                        client={clientInfos}
+                        closeImageSelector={closeImageSelector}
+                        table={"Images"}
+                        currentImageIndex={currentImageIndex}
+                        onNavigateToImage={handleNavigateToImage}
+                        onRemoveImage={handleRemoveImage}
+                    />
+                )}
+
+                {showSuggestionForm && suggestionForms.length > 0 && selectedSuggestion && (
                         <CustomModal show={showSuggestionForm} onClose={closeSuggestionForm}>
                             {selectedSuggestion.fields.IsAtelier ? (
                                 <AtelierForm
@@ -710,12 +738,11 @@ const ImobProperty = ({ softrEmail }) => {
                                 />
                             )}
                         </CustomModal>
-                    )}
+                )}
 
-                </div>
             </div>
         </div>
     );
 }
 
-export default ImobProperty
+export default ImobProperty;
