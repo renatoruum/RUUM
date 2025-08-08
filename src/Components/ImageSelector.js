@@ -196,10 +196,11 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
       imagesArray = [{
         imgUrls: form.imgUrls, // Array de URLs das imagens
         imgUrl: form.imgUrls[0], // Primeira imagem para compatibilidade com backend
+        "INPUT IMAGES": form.imgUrls, // Campo específico para o Airtable
         tipo: form.tipo,
         retirar: form.retirar,
         codigo: property?.fields?.Codigo ?? '',
-        propertyUrl: property?.fields?.URL_Portal ?? '',
+        propertyUrl: property?.fields?.URL_Portal ?? property?.fields?.URL_Propriedade ?? '',
         observacoes: form.observacoes,
         estilo: form.estilo,
         acabamento: form.acabamento,
@@ -239,10 +240,12 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
         console.log(`imgUrl do formulário ${index + 1}:`, form.imgUrl);
         const base = {
           imgUrl: form.imgUrl,
+          imgUrls: [form.imgUrl], // Array de uma imagem para manter compatibilidade
+          "INPUT IMAGES": [form.imgUrl], // Campo específico para o Airtable - SEMPRE incluir
           tipo: form.tipo,
           retirar: form.retirar,
           codigo: property?.fields?.Codigo ?? '',
-          propertyUrl: property?.fields?.URL_Portal ?? '',
+          propertyUrl: property?.fields?.URL_Portal ?? property?.fields?.URL_Propriedade ?? '',
           observacoes: form.observacoes,
           estilo: form.estilo,
           acabamento: form.acabamento,
@@ -253,6 +256,10 @@ const ImageSelector = ({ property, client, closeImageSelector, table }) => {
         };
 
         console.log(`Base criada para formulário ${index + 1}:`, base);
+        console.log(`=== VERIFICANDO CAMPOS DE IMAGEM FORMULÁRIO ${index + 1} ===`);
+        console.log(`imgUrl:`, base.imgUrl);
+        console.log(`imgUrls:`, base.imgUrls);
+        console.log(`INPUT IMAGES:`, base["INPUT IMAGES"]);
         return base;
       });
     }

@@ -11,16 +11,16 @@
 
 /* Seção de sugestões */
 .suggestionsSection {
-    margin-bottom: 0.5rem;
+    margin-top: 1rem;
     padding: 0 1rem;
 }
 
 .suggestionsTitle {
     font-family: 'Poppins', sans-serif;
-    font-weight: 500;
     color: #333;
     margin-bottom: 1rem;
-    font-size: 1.1rem;
+    font-size: 1.25rem;
+    font-weight: bold;
 }
 
 .suggestionsScrollContainer {

@@ -18,7 +18,8 @@ const AtelierForm = ({
     onRemoveImage,
     selectedModel, // Nova prop para determinar o título
     estilosamb, // Nova prop com os estilos de ambientação
-    table // Prop para identificar se é SuggestionFeed
+    table, // Prop para identificar se é SuggestionFeed
+    openedFrom // Prop para controlar origem do formulário
 }) => {
     // Função para obter o título correto baseado no modelo selecionado
     const getFormTitle = () => {
@@ -37,26 +38,76 @@ const AtelierForm = ({
 
     // Para SuggestionFeed, temos múltiplas imagens no currentForm.imgUrls
     const isSuggestionFeed = table === "Image suggestions";
-    const displayImages = isSuggestionFeed ? currentForm?.imgUrls || [] : [currentForm?.imgUrl];
-    const mainDisplayImage = isSuggestionFeed ? displayImages[0] : currentForm?.imgUrl;
+    
+    // Definir as imagens a serem exibidas baseado na origem
+    let displayImages;
+    let mainDisplayImage;
+    let currentImageIndex = 0; // Índice da imagem sendo visualizada
+    
+    if (isSuggestionFeed && openedFrom === 'suggestions-feed') {
+        // Para formulários abertos do feed de sugestões, usar as imagens do campo INPUT IMAGE
+        displayImages = currentForm?.inputImages || [];
+        // Usar índice da imagem atual para mostrar a imagem correta
+        currentImageIndex = currentForm?.currentImageIndex || 0;
+        mainDisplayImage = displayImages[currentImageIndex] || displayImages[0] || currentForm?.imgUrl;
+    } else if (isSuggestionFeed) {
+        // Para outros SuggestionFeed, usar a lógica original
+        displayImages = currentForm?.imgUrls || [];
+        mainDisplayImage = displayImages[0] || currentForm?.imgUrl;
+    } else {
+        // Para formulários normais
+        displayImages = [currentForm?.imgUrl];
+        mainDisplayImage = currentForm?.imgUrl;
+    }
 
-    // Recupera o código interno do imóvel (property.fields.Codigo pode ser string ou array)
+    // Recupera o código interno do imóvel 
     let codigoInterno = '';
-    if (property && property.fields && property.fields.Codigo) {
-        if (Array.isArray(property.fields.Codigo)) {
-            codigoInterno = property.fields.Codigo[selectedIndex] || property.fields.Codigo[0] || '';
-        } else {
-            codigoInterno = property.fields.Codigo;
+    
+    // Para formulários de suggestion feed, usar o valor pré-preenchido
+    if (isSuggestionFeed && openedFrom === 'suggestions-feed') {
+        codigoInterno = currentForm?.codigo || '';
+    } else {
+        // Para outras rotas, primeiro tentar o valor já preenchido no form
+        codigoInterno = currentForm?.codigo || '';
+        
+        // Se não houver valor no form, tentar buscar dos campos da propriedade
+        if (!codigoInterno && property && property.fields) {
+            // Tentar primeiro 'Client Internal Code' (para SuggestionFeed) depois 'Codigo' (para ImageSelector)
+            let codigoField = property.fields['Client Internal Code'] || property.fields.Codigo;
+            
+            if (codigoField) {
+                if (Array.isArray(codigoField)) {
+                    codigoInterno = codigoField[selectedIndex] || codigoField[0] || '';
+                } else {
+                    codigoInterno = codigoField;
+                }
+            }
         }
     }
 
-    // Recupera o link da página do imóvel (property.fields['Fotos_URLs'] deve ser array)
+    // Recupera o link da página do imóvel
     let linkPaginaImovel = '';
-    if (property && property.fields && property.fields['Fotos_URLs']) {
-        const fotosUrls = Array.isArray(property.fields['Fotos_URLs'])
-            ? property.fields['Fotos_URLs']
-            : property.fields['Fotos_URLs'].split('\n').filter(Boolean);
-        linkPaginaImovel = fotosUrls[selectedIndex] || '';
+    
+    // Para formulários de suggestion feed, usar o valor pré-preenchido
+    if (isSuggestionFeed && openedFrom === 'suggestions-feed') {
+        linkPaginaImovel = currentForm?.propertyUrl || '';
+    } else {
+        // Para outras rotas, primeiro tentar o valor já preenchido no form
+        linkPaginaImovel = currentForm?.propertyUrl || '';
+        
+        // Se não houver valor no form, tentar buscar dos campos da propriedade
+        if (!linkPaginaImovel && property && property.fields) {
+            // Tentar diferentes formatos de campo: Property's URL (SuggestionFeed), URL_Portal (ImageSelector), URL_Propriedade (Imobiliárias)
+            let urlField = property.fields["Property's URL"] || property.fields.URL_Portal || property.fields.URL_Propriedade;
+            
+            if (urlField) {
+                if (Array.isArray(urlField)) {
+                    linkPaginaImovel = urlField[selectedIndex] || urlField[0] || '';
+                } else {
+                    linkPaginaImovel = urlField;
+                }
+            }
+        }
     }
 
     // Atualiza os campos do formulário apenas quando selectedIndex, property, forms ou formIndex mudam
@@ -212,12 +263,49 @@ const AtelierForm = ({
                             <h6 className={formstyles.thumbnailsTitle}>Todas as imagens selecionadas:</h6>
                             <div className={formstyles.thumbnailsGrid}>
                                 {displayImages.map((imgUrl, idx) => (
-                                    <div key={idx} className={formstyles.thumbnailBox}>
+                                    <div 
+                                        key={idx} 
+                                        className={`${formstyles.thumbnailBox} ${
+                                            openedFrom === 'suggestions-feed' && idx === currentImageIndex ? formstyles.thumbnailActive : ''
+                                        }`}
+                                        onClick={() => {
+                                            // Para feed de sugestões, permitir clique para mudar visualização
+                                            if (openedFrom === 'suggestions-feed') {
+                                                handleFormChange('currentImageIndex', idx);
+                                            }
+                                        }}
+                                        style={{ cursor: openedFrom === 'suggestions-feed' ? 'pointer' : 'default' }}
+                                    >
                                         <img
                                             src={imgUrl}
                                             alt={`Imagem ${idx + 1}`}
                                             className={formstyles.thumbnailImage}
                                         />
+                                        {/* Botão de remover apenas para feed de sugestões */}
+                                        {openedFrom === 'suggestions-feed' && displayImages.length > 1 && (
+                                            <button
+                                                type="button"
+                                                className={formstyles.removeThumbnailBtn}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // Remover imagem do array
+                                                    const newImages = displayImages.filter((_, imgIdx) => imgIdx !== idx);
+                                                    handleFormChange('inputImages', newImages);
+                                                    // Ajustar índice atual se necessário
+                                                    if (idx === currentImageIndex && currentImageIndex > 0) {
+                                                        handleFormChange('currentImageIndex', currentImageIndex - 1);
+                                                    } else if (idx < currentImageIndex) {
+                                                        handleFormChange('currentImageIndex', currentImageIndex - 1);
+                                                    }
+                                                }}
+                                                aria-label={`Remover imagem ${idx + 1}`}
+                                            >
+                                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                                    <line x1="13.5" y1="4.5" x2="4.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                                                    <line x1="4.5" y1="4.5" x2="13.5" y2="13.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                                                </svg>
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -316,8 +404,9 @@ const AtelierForm = ({
                                 </select>
                             </div>
                         )}
-                        {selectedModel === "atelier"
-                            &&
+                        {/* Campos RUUM Project e RUUM ReStyle - mostrar sempre para modelos Atelier (incluindo suggestions-feed) */}
+                        {(selectedModel === "atelier" || selectedModel === "restyle" || selectedModel === "project" || 
+                          (isSuggestionFeed && openedFrom === 'suggestions-feed')) && (
                             <div>
                                 <div className="mb-2">
                                     <label className="form-label">RUUM Project - Colocar/alterar acabamento (Pode acarretar custo adicional. Consulte seu plano).*</label>
@@ -349,7 +438,8 @@ const AtelierForm = ({
                                         ))}
                                     </select>
                                 </div>
-                            </div>}
+                            </div>
+                        )}
                         <div className="mb-2">
                             <label className="form-label">Requisições de clientes</label>
                             <textarea
@@ -371,8 +461,8 @@ const AtelierForm = ({
                             />
                         </div>
                         
-                        {/* Campo Destaques - apenas para SuggestionFeed */}
-                        {table === "Image suggestions" && (
+                        {/* Campo Destaques - apenas para SuggestionFeed E não aberto do feed de sugestões */}
+                        {table === "Image suggestions" && openedFrom !== 'suggestions-feed' && (
                             <div className="mb-2">
                                 <label className="form-label">Destaques do imóvel (múltipla seleção)</label>
                                 <select

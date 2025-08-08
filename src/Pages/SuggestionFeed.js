@@ -196,6 +196,7 @@ const SuggestionFeed = () => {
 
   // Handle property selection
   const selectProperty = (property) => {
+    console.log('Property selected:', property);
     setSelectedProperty(property);
     setShowPropertysList(false);
     setShowImageSelector(true);
