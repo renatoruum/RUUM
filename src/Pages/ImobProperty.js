@@ -11,6 +11,7 @@ import ImageSelector from '../Components/ImageSelector';
 import CustomModal from '../Components/CustomModal';
 import AtelierForm from '../Components/AtelierForm';
 import SmartStageForm from '../Components/SmartStageForm';
+import Confetti from 'react-confetti'; // Para animação de confetti
 //Airtable
 import Airtable from 'airtable';
 //Constants
@@ -84,6 +85,8 @@ const ImobProperty = ({ softrEmail }) => {
     const [suggestionForms, setSuggestionForms] = useState([]);
     const [suggestionFormIndex, setSuggestionFormIndex] = useState(0);
     const [currentImageIndex, setCurrentImageIndex] = useState(0); // Para controlar qual imagem está sendo exibida na suggestion feed
+    const [savingSuggestion, setSavingSuggestion] = useState(false); // Estado para loader do Feed de Sugestões
+    const [showSuggestionConfetti, setShowSuggestionConfetti] = useState(false); // Estado para confetti do Feed de Sugestões
 
     var client = {
         Email: "galia@acasa7.com.br",
@@ -118,6 +121,12 @@ const ImobProperty = ({ softrEmail }) => {
             return null;
         }
     }
+
+    // Função para abreviar texto dos badges
+    const abbreviateText = (text, maxLength = 12) => {
+        if (!text || text.length <= maxLength) return text;
+        return text.substring(0, maxLength - 3) + '...';
+    };
 
     // Função para buscar o plano do cliente pelo nome
     const getClientTable = async (clientid) => {
@@ -299,6 +308,8 @@ const ImobProperty = ({ softrEmail }) => {
                     acabamento: fields['Finish'] || null,
                     retirar: fields['Decluttering'] || null,
                     propertyUrl: fields["Property's URL"] || '', // Adicionar URL da propriedade
+                    // Adicionar destaques do Airtable
+                    destaques: fields['Destaques'] || [],
                     // Armazenar os IDs originais das sugestões para referência
                     originalSuggestionIds: []
                 };
@@ -388,6 +399,8 @@ const ImobProperty = ({ softrEmail }) => {
             codigo: property.propertyCode, // Client Internal Code - Código do Imóvel
             propertyUrl: property.propertyUrl || '', // Property's URL - Link da página do imóvel
             originalSuggestionIds: property.originalSuggestionIds, // IDs das sugestões originais
+            // Definir imgWorkflow baseado no tipo
+            imgWorkflow: isAtelier ? 'Atelier' : 'SmartStage',
             
             // Campos específicos baseados no tipo de formulário
             ...(isAtelier ? {
@@ -503,57 +516,85 @@ const ImobProperty = ({ softrEmail }) => {
     };
 
     const handleSuggestionSubmit = async (formData) => {
+        setSavingSuggestion(true); // Iniciar loader
+        
         try {
-            // Para suggestion feed, pegar as imagens do array inputImages
-            const currentForm = suggestionForms[0];
+            // Importar apiCall para usar o mesmo endpoint que funciona
+            const { apiCall } = await import('../Config/Config');
+            
+            // Determinar fonte dos dados - formData pode ser undefined ou ter estrutura diferente
+            let currentForm;
+            
+            if (formData && formData.inputImages) {
+                // Caso 1: formData contém inputImages (estrutura esperada)
+                currentForm = formData;
+            } else if (suggestionForms[0] && suggestionForms[0].inputImages) {
+                // Caso 2: usar suggestionForms[0] como fallback
+                currentForm = suggestionForms[0];
+                
+                // Se formData existe, mesclar os dados atualizados do formulário
+                if (formData) {
+                    currentForm = {
+                        ...suggestionForms[0],
+                        ...formData // Sobrescrever com dados atualizados do formulário
+                    };
+                }
+            } else {
+                throw new Error('Nenhuma imagem encontrada para processar');
+            }
+            
+            // Cada imagem deve gerar um registro separado na tabela "Images"
             const imagesArray = currentForm.inputImages.map(imageUrl => ({
-                imgUrls: [imageUrl], // Array com a URL da imagem
-                imgUrl: imageUrl, // URL da imagem
-                "INPUT IMAGES": [imageUrl], // Campo específico para o Airtable
-                tipo: currentForm.tipo,
-                retirar: currentForm.retirar,
+                // Usar a mesma estrutura que funciona no ImageSelector
+                imgUrl: imageUrl,
+                imgUrls: [imageUrl], // Array com uma imagem para manter compatibilidade
+                "INPUT IMAGES": [imageUrl], // Campo específico para o Airtable - SEMPRE incluir
+                tipo: currentForm.tipo || '',
+                retirar: currentForm.retirar || '',
                 codigo: currentForm.codigo || '',
                 propertyUrl: currentForm.propertyUrl || '',
-                observacoes: currentForm.observacoes,
-                estilo: currentForm.estilo,
-                acabamento: currentForm.acabamento,
-                imagensReferencia: currentForm.imagensReferencia,
-                modeloVideo: currentForm.modeloVideo,
-                formatoVideo: currentForm.formatoVideo,
-                imgWorkflow: currentForm.imgWorkflow,
-                suggestionstatus: "Suggested",
-                preco: currentForm.preco || '',
-                endereco: currentForm.endereco || '',
-                destaques: currentForm.destaques || []
+                observacoes: currentForm.observacoes || '',
+                estilo: currentForm.estilo || '',
+                acabamento: currentForm.acabamento || '',
+                imagensReferencia: currentForm.imagensReferencia || [],
+                modeloVideo: currentForm.modeloVideo || '',
+                formatoVideo: currentForm.formatoVideo || '',
+                imgWorkflow: currentForm.imgWorkflow || '',
+                message: currentForm.message || '' // Adicionar campo Message
             }));
 
-            // Objeto para envio ao backend - incluindo Clients
+            // Objeto para envio ao backend - salvando na tabela "Images" para processamento
             const requestData = {
                 imagesArray: imagesArray,
                 email: clientInfos?.Email,
-                clientId: clientInfos?.ClientId, // Este é o campo importante para Clients
+                clientId: clientInfos?.ClientId,
                 invoiceId: clientInfos?.InvoiceId,
                 userId: clientInfos?.UserId,
-                table: "Image suggestions"
+                table: "Images" // Mudar para tabela de processamento
             };
 
-            // Fazer o POST request
-            const response = await fetch(`${process.env.REACT_APP_CLOUD_FUNCTION_URL}uploadimg-airtable-ruum`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+            // Usar o mesmo endpoint que funciona no ImageSelector
+            const data = await apiCall("/api/update-images-airtable", {
+                method: "POST",
                 body: JSON.stringify(requestData)
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                closeSuggestionForm();
+            setSavingSuggestion(false); // Parar loader
+            
+            if (data) {
+                // Mostrar confetti igual ao ImageSelector
+                setShowSuggestionConfetti(true);
+                setTimeout(() => {
+                    setShowSuggestionConfetti(false);
+                    closeSuggestionForm();
+                }, 4000);
             } else {
                 alert('Erro ao enviar formulário. Tente novamente.');
             }
         } catch (error) {
-            alert('Erro ao enviar formulário. Tente novamente.');
+            setSavingSuggestion(false); // Parar loader em caso de erro
+            console.error('Erro ao enviar formulário:', error);
+            alert('Erro ao enviar formulário: ' + error.message);
         }
     };
 
@@ -563,6 +604,24 @@ const ImobProperty = ({ softrEmail }) => {
     useEffect(() => {
         document.title = "Portal de Imóveis - " + clientName;
     }, []);
+
+    // Componente Overlay para loader e confetti (igual ao ImageSelector)
+    const Overlay = ({ children }) => (
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(255,255,255,0.7)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+        }}>
+            {children}
+        </div>
+    );
 
     return (
         <div>
@@ -596,12 +655,27 @@ const ImobProperty = ({ softrEmail }) => {
                                                         <div
                                                             key={`${image.suggestionId}-${imgIndex}`}
                                                             className={`carousel-item ${imgIndex === 0 ? 'active' : ''}`}
+                                                            style={{ position: 'relative' }}
                                                         >
                                                             <img 
                                                                 src={image.url} 
                                                                 alt={`${property.propertyCode} - Imagem ${imgIndex + 1}`}
                                                                 className={styles.suggestionImage}
                                                             />
+                                                            {/* Badges de Destaques */}
+                                                            {property.destaques && property.destaques.length > 0 && (
+                                                                <div className={styles.badgesContainer}>
+                                                                    {property.destaques.slice(0, 3).map((destaque, badgeIndex) => (
+                                                                        <span
+                                                                            key={badgeIndex}
+                                                                            className={styles.destaqueBadge}
+                                                                            title={destaque} // Tooltip com texto completo
+                                                                        >
+                                                                            {abbreviateText(destaque)}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -632,11 +706,27 @@ const ImobProperty = ({ softrEmail }) => {
                                         ) : (
                                             // Imagem única
                                             property.images.length > 0 && (
-                                                <img 
-                                                    src={property.images[0].url} 
-                                                    alt={property.propertyCode}
-                                                    className={styles.suggestionImage}
-                                                />
+                                                <div style={{ position: 'relative' }}>
+                                                    <img 
+                                                        src={property.images[0].url} 
+                                                        alt={property.propertyCode}
+                                                        className={styles.suggestionImage}
+                                                    />
+                                                    {/* Badges de Destaques para imagem única */}
+                                                    {property.destaques && property.destaques.length > 0 && (
+                                                        <div className={styles.badgesContainer}>
+                                                            {property.destaques.slice(0, 3).map((destaque, badgeIndex) => (
+                                                                <span
+                                                                    key={badgeIndex}
+                                                                    className={styles.destaqueBadge}
+                                                                    title={destaque} // Tooltip com texto completo
+                                                                >
+                                                                    {abbreviateText(destaque)}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )
                                         )}
                                     </div>
@@ -714,8 +804,8 @@ const ImobProperty = ({ softrEmail }) => {
                                     onNavigateToImage={handleSuggestionNavigateToImage}
                                     onRemoveImage={handleSuggestionRemoveImage}
                                     onOriginalClose={closeSuggestionForm}
-                                    table={"Image suggestions"}
-                                    openedFrom={selectedSuggestion.fields.OpenedFrom}
+                                    table={"Images"}
+                                    openedFrom={'suggestions-feed'}
                                     estilosamb={estilosamb}
                                 />
                             ) : (
@@ -733,14 +823,84 @@ const ImobProperty = ({ softrEmail }) => {
                                     onNavigateToImage={handleSuggestionNavigateToImage}
                                     onRemoveImage={handleSuggestionRemoveImage}
                                     onOriginalClose={closeSuggestionForm}
-                                    table={"Image suggestions"}
-                                    openedFrom={selectedSuggestion.fields.OpenedFrom}
+                                    table={"Images"}
+                                    openedFrom={'suggestions-feed'}
                                 />
                             )}
                         </CustomModal>
                 )}
 
             </div>
+            
+            {/* Confetti para Feed de Sugestões */}
+            {showSuggestionConfetti && (
+                <Overlay>
+                    <>
+                        <Confetti numberOfPieces={250} recycle={false} colors={["#68bf6c", "#b6e7c9", "#3a7d44", "#e6eaf0"]} />
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            fontSize: 28,
+                            textAlign: 'center',
+                            background: '#68bf6c',
+                            borderRadius: 18,
+                            padding: '2.5rem 3.5rem',
+                            boxShadow: '0 4px 32px 0 rgba(44,62,80,0.18), 0 0 0 6px #fff4',
+                            border: '2px solid #fff',
+                            zIndex: 10000
+                        }}>
+                            Imagens enviadas para processamento!
+                        </div>
+                    </>
+                </Overlay>
+            )}
+            
+            {/* Loader para Feed de Sugestões */}
+            {savingSuggestion && (
+                <Overlay>
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: 300,
+                        background: '#68bf6c',
+                        borderRadius: 18,
+                        boxShadow: '0 4px 32px 0 rgba(44,62,80,0.18), 0 0 0 6px #fff4',
+                        border: '2px solid #fff',
+                        padding: '2.5rem 3.5rem',
+                        zIndex: 10000
+                    }}>
+                        <div style={{
+                            border: '6px solid #e6eaf0',
+                            borderTop: '6px solid #fff',
+                            borderRadius: '50%',
+                            width: '56px',
+                            height: '56px',
+                            animation: 'spin 1s linear infinite',
+                            margin: '2rem auto',
+                            background: 'transparent',
+                            boxShadow: '0 0 16px 2px #fff8'
+                        }} />
+                        <div style={{ marginTop: '.5rem', textAlign: 'center', color: '#fff', fontWeight: 'bold', textShadow: '0 2px 8px #000a' }}>
+                            Salvando imagens do Feed de Sugestões
+                        </div>
+                        <style>
+                            {`
+                            @keyframes spin {
+                                0% { transform: rotate(0deg);}
+                                100% { transform: rotate(360deg);}
+                            }
+                            `}
+                        </style>
+                    </div>
+                </Overlay>
+            )}
+            
         </div>
     );
 }

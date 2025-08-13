@@ -28,12 +28,20 @@ const SmartStageForm = ({
     const [questionDialog, setQuestionDialog] = useState('');
     const [isopen, setIsOpen] = useState(false);
 
-    const imgQty = forms.length;
+    // Para SuggestionFeed, detectar automaticamente qual estrutura usar
+    const isSuggestionFeed = openedFrom === 'suggestions-feed';
+    
+    // Calcular quantidade de imagens corretamente
+    let imgQty;
+    if (isSuggestionFeed && currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
+        // Para SuggestionFeed: contar imagens no array inputImages
+        imgQty = currentForm.inputImages.length;
+    } else {
+        // Para outras rotas: contar formulários
+        imgQty = forms.length;
+    }
     const credits = imgQty * 100;
     const selectedIndex = selectedIndexes[formIndex];
-    
-    // Para SuggestionFeed, detectar automaticamente qual estrutura usar
-    const isSuggestionFeed = table === "Image suggestions";
 
     // LÓGICA ROBUSTA PARA DETECTAR ESTRUTURA DE DADOS
     let displayImages = [];
@@ -91,12 +99,6 @@ const SmartStageForm = ({
     }
 
     const handleOpenDialogBox = () => {
-        // Para SuggestionFeed, não mostrar modal de confirmação de créditos
-        if (table === "Image suggestions") {
-            handleSubmit();
-            return;
-        }
-        
         const msg = imgQty > 1
             ? `O processamento destas ${imgQty} imagens vai consumir ${credits} créditos do seu plano. Deseja continuar?`
             : `O processamento desta imagem vai consumir ${credits} créditos do seu plano. Deseja continuar?`;
@@ -183,12 +185,12 @@ const SmartStageForm = ({
     const RETIRAR = ['Sim', 'Não'];
 
     const handleEnviarClick = () => {
-        handleSubmit();
+        handleOpenDialogBox(); // Usar o modal de confirmação em vez de submeter diretamente
     };
 
     // Função para verificar se um formulário está preenchido
     const isFormComplete = (form) => {
-        if (table === "Image suggestions") {
+        if (openedFrom === 'suggestions-feed') {
             // Para SuggestionFeed, não exigir campo 'tipo'
             return form.retirar;
         } else {
@@ -314,7 +316,7 @@ const SmartStageForm = ({
                 </h6>
                 <form className={styles.formAreaGrid} onSubmit={e => e.preventDefault()}>
                     {/* Campo Tipo de ambiente - esconder apenas para SuggestionFeed */}
-                    {table !== "Image suggestions" && (
+                    {openedFrom !== 'suggestions-feed' && (
                         <div className="mb-3">
                             <label className="form-label d-flex text-start fw-bold">
                                 Tipo de ambiente*
@@ -503,7 +505,7 @@ const SmartStageForm = ({
                     </div>
                 </form>
             </div>
-            {actionScript && questionDialog &&
+            {action && questionDialog &&
                 <MsgModal
                     show={openDialogBox}
                     onClose={actionScript}>

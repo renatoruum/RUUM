@@ -123,6 +123,55 @@
     font-weight: 500;
 }
 
+/* Badges de Destaques */
+.badgesContainer {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    max-width: calc(100% - 4rem); /* Espaço para o badge de contagem de imagens */
+    z-index: 10;
+}
+
+.destaqueBadge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    text-transform: capitalize;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: help;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    max-width: 80px; /* Largura máxima para caber 3 badges */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.destaqueBadge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Cores alternativas para os badges */
+.destaqueBadge:nth-child(1) {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.destaqueBadge:nth-child(2) {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.destaqueBadge:nth-child(3) {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
 /* Estilos personalizados para o carrossel */
 .carouselContainer .carousel-control-prev,
 .carouselContainer .carousel-control-next {

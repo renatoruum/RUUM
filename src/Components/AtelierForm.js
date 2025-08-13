@@ -38,7 +38,7 @@ const AtelierForm = ({
     const selectedIndex = selectedIndexes[formIndex];
 
     // Para SuggestionFeed, temos múltiplas imagens no currentForm.inputImages
-    const isSuggestionFeed = table === "Image suggestions";
+    const isSuggestionFeed = openedFrom === 'suggestions-feed';
 
 
     // LÓGICA ROBUSTA PARA DETECTAR ESTRUTURA DE DADOS
@@ -206,7 +206,16 @@ const AtelierForm = ({
     const [openDialogBox, setOpenDialogBox] = useState(false);
     const [action, setAction] = useState('');
     const [questionDialog, setQuestionDialog] = useState('');
-    const imgQty = forms.length;
+    
+    // Calcular quantidade de imagens corretamente
+    let imgQty;
+    if (isSuggestionFeed && currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
+        // Para SuggestionFeed: contar imagens no array inputImages
+        imgQty = currentForm.inputImages.length;
+    } else {
+        // Para outras rotas: contar formulários
+        imgQty = forms.length;
+    }
     const credits = imgQty * 300;
     const actionScript = (act) => {
         setOpenDialogBox(false);
@@ -217,12 +226,6 @@ const AtelierForm = ({
         }
     };
     const handleOpenDialogBox = () => {
-        // Para SuggestionFeed, não mostrar modal de confirmação de créditos
-        if (table === "Image suggestions") {
-            handleSubmit();
-            return;
-        }
-        
         const msg = imgQty > 1
             ? `O processamento destas ${imgQty} imagens vai consumir ${credits} créditos do seu plano. Deseja continuar?`
             : `O processamento desta imagem vai consumir ${credits} créditos do seu plano. Deseja continuar?`;
@@ -388,7 +391,7 @@ const AtelierForm = ({
                             </select>
                         </div>
                         {/* Campo Tipo de ambiente - esconder apenas para SuggestionFeed */}
-                        {table !== "Image suggestions" && (
+                        {openedFrom !== 'suggestions-feed' && (
                             <div className="mb-2">
                                 <label className="form-label">Tipo de ambiente</label>
                                 <select
