@@ -183,10 +183,12 @@ const ChoosForm = forwardRef((props, ref) => {
     }, [hoveredModel, selectedModel]);
 
     // When submitting, we store the selected model
-    const handleModelSubmit = () => {
+    const handleModelSubmit = (formData) => {
         // Store the selected model when submitting
         props.handleFormChange('modelType', selectedModel);
-        props.handleSubmit();
+        
+        // Pass the formData to the original handleSubmit
+        props.handleSubmit(formData);
     };
 
     // Customize props for each form type

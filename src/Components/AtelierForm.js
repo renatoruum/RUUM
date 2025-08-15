@@ -46,31 +46,33 @@ const AtelierForm = ({
     let displayImages = [];
     let mainDisplayImage = null;
     
-    if (isSuggestionFeed) {
-        // Para suggestion feed, tentar diferentes estruturas na ordem de prioridade
+    if (table === "Image suggestions") {
+        // ROTA 3: SUGGESTIONFEED - Usar currentForm.imgUrls
         if (currentForm?.imgUrls && Array.isArray(currentForm.imgUrls)) {
-            // Estrutura vinda do ImageSelector (/suggestionfeed)
             displayImages = currentForm.imgUrls;
             mainDisplayImage = currentForm.imgUrls[currentImageIndex || 0];
-        } else if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
-            // Estrutura vinda do Feed de Sugestões direto
-            displayImages = currentForm.inputImages;
-            mainDisplayImage = currentForm.inputImages[currentImageIndex || 0];
         } else if (forms && forms.length > 0 && forms[0]?.imgUrls) {
-            // Fallback: tentar forms[0].imgUrls
+            // Fallback: usar forms[0].imgUrls
             displayImages = forms[0].imgUrls;
             mainDisplayImage = forms[0].imgUrls[currentImageIndex || 0];
+        } else {
+            displayImages = [];
+            mainDisplayImage = null;
+        }
+    } else if (isSuggestionFeed) {
+        // ROTA 1: IMOBPROPERTY -> FEED DE SUGESTÕES - Usar inputImages
+        if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
+            displayImages = currentForm.inputImages;
+            mainDisplayImage = currentForm.inputImages[currentImageIndex || 0];
         } else if (forms && forms.length > 0 && forms[0]?.inputImages) {
-            // Fallback: tentar forms[0].inputImages
             displayImages = forms[0].inputImages;
             mainDisplayImage = forms[0].inputImages[currentImageIndex || 0];
         } else {
-            // Último recurso: usar imgUrl único
             displayImages = [currentForm?.imgUrl].filter(Boolean);
             mainDisplayImage = currentForm?.imgUrl;
         }
     } else {
-        // Para rota normal - usar forms array
+        // ROTA 2: IMOBPROPERTY -> IMAGESELECTOR - Usar forms array padrão
         displayImages = [currentForm?.imgUrl].filter(Boolean);
         mainDisplayImage = currentForm?.imgUrl;
     }
@@ -207,13 +209,16 @@ const AtelierForm = ({
     const [action, setAction] = useState('');
     const [questionDialog, setQuestionDialog] = useState('');
     
-    // Calcular quantidade de imagens corretamente
+    // Calcular quantidade de imagens corretamente baseado na estrutura detectada
     let imgQty;
-    if (isSuggestionFeed && currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
-        // Para SuggestionFeed: contar imagens no array inputImages
-        imgQty = currentForm.inputImages.length;
+    if (table === "Image suggestions") {
+        // ROTA 3: SUGGESTIONFEED - Contar imagens no currentForm.imgUrls
+        imgQty = displayImages.length;
+    } else if (isSuggestionFeed) {
+        // ROTA 1: IMOBPROPERTY -> FEED DE SUGESTÕES - Contar inputImages
+        imgQty = displayImages.length;
     } else {
-        // Para outras rotas: contar formulários
+        // ROTA 2: IMOBPROPERTY -> IMAGESELECTOR - Contar formulários
         imgQty = forms.length;
     }
     const credits = imgQty * 300;
@@ -236,8 +241,8 @@ const AtelierForm = ({
 
     // Função para verificar se um formulário está preenchido
     const isFormComplete = (form) => {
-        // Para SuggestionFeed, não exigir o campo tipo
-        let isComplete = isSuggestionFeed 
+        // Para ROTA 3: SUGGESTIONFEED e ROTA 1: FEED DE SUGESTÕES, não exigir o campo tipo
+        let isComplete = (table === "Image suggestions" || openedFrom === 'suggestions-feed')
             ? form.estilo 
             : form.estilo && form.tipo;
         
@@ -275,37 +280,23 @@ const AtelierForm = ({
                         }
                     </h4>
 
-                    {/* THUMBNAILS - VERSÃO ROBUSTA */}
+                    {/* THUMBNAILS - USANDO ESTRUTURA JÁ DETECTADA */}
                     {(() => {
-                        // Usar a mesma lógica robusta para detectar imagens
-                        let imagesToShow = [];
+                        // Usar as imagens já detectadas na lógica principal
+                        let imagesToShow = displayImages;
                         let activeIndex = 0;
 
-                        if (isSuggestionFeed) {
-                            // Para suggestion feed, detectar automaticamente qual estrutura usar
-                            if (currentForm?.imgUrls && Array.isArray(currentForm.imgUrls)) {
-                                // Estrutura vinda do ImageSelector (/suggestionfeed)
-                                imagesToShow = currentForm.imgUrls;
-                                activeIndex = currentImageIndex || 0;
-                            } else if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
-                                // Estrutura vinda do Feed de Sugestões direto
-                                imagesToShow = currentForm.inputImages;
-                                activeIndex = currentImageIndex || 0;
-                            } else if (forms && forms.length > 0 && forms[0]?.imgUrls) {
-                                // Fallback: tentar forms[0].imgUrls
-                                imagesToShow = forms[0].imgUrls;
-                                activeIndex = currentImageIndex || 0;
-                            } else if (forms && forms.length > 0 && forms[0]?.inputImages) {
-                                // Fallback: tentar forms[0].inputImages
-                                imagesToShow = forms[0].inputImages;
-                                activeIndex = currentImageIndex || 0;
-                            }
+                        if (table === "Image suggestions") {
+                            // ROTA 3: SUGGESTIONFEED - currentImageIndex controla qual imagem está ativa
+                            activeIndex = currentImageIndex || 0;
+                        } else if (isSuggestionFeed) {
+                            // ROTA 1: IMOBPROPERTY -> FEED DE SUGESTÕES - currentImageIndex controla qual imagem está ativa
+                            activeIndex = currentImageIndex || 0;
                         } else {
-                            // Para rota normal: usar forms array
+                            // ROTA 2: IMOBPROPERTY -> IMAGESELECTOR - formIndex controla qual formulário está ativo
                             imagesToShow = forms.map(form => form.imgUrl).filter(Boolean);
                             activeIndex = formIndex || 0;
                         }
-
 
                         // Mostrar thumbnails se tiver mais de 1 imagem
                         if (imagesToShow.length > 1) {
@@ -390,8 +381,8 @@ const AtelierForm = ({
                                 ))}
                             </select>
                         </div>
-                        {/* Campo Tipo de ambiente - esconder apenas para SuggestionFeed */}
-                        {openedFrom !== 'suggestions-feed' && (
+                        {/* Campo Tipo de ambiente - mostrar apenas na ROTA 2: IMOBPROPERTY -> IMAGESELECTOR */}
+                        {table !== "Image suggestions" && openedFrom !== 'suggestions-feed' && (
                             <div className="mb-2">
                                 <label className="form-label">Tipo de ambiente</label>
                                 <select
@@ -536,8 +527,30 @@ const AtelierForm = ({
                             />
                         </div>
                         <div className={styles.formNavGrid} style={{ marginTop: '2.2rem', padding: '0 1.2rem 1.2rem 1.2rem' }}>
-                            {/* Para SuggestionFeed, apenas mostrar botão Enviar */}
-                            {isSuggestionFeed ? (
+                            {/* Para rota 3 (table === "Image suggestions"), pular modal e ir direto para handleSubmit */}
+                            {table === "Image suggestions" ? (
+                                <button
+                                    type="button"
+                                    className="btn"
+                                    style={{
+                                        backgroundColor: '#68bf6c',
+                                        color: '#fff',
+                                        border: 'none',
+                                        fontWeight: 600,
+                                        fontSize: '1.1em',
+                                        padding: '0.6em 1.2em',
+                                        borderRadius: '8px',
+                                        boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
+                                        opacity: !isFormComplete(currentForm) ? 0.7 : 1,
+                                        width: '100%'
+                                    }}
+                                    onClick={handleSubmit}
+                                    disabled={!isFormComplete(currentForm)}
+                                >
+                                    Enviar
+                                </button>
+                            ) : isSuggestionFeed ? (
+                                /* Para rota 1 (openedFrom === 'suggestions-feed'), mostrar modal normalmente */
                                 <button
                                     type="button"
                                     className="btn"

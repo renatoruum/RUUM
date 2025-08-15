@@ -1,10 +1,13 @@
-//Reeact
+//React
 import { useEffect, useState } from 'react';
 //Components
 import MsgModal from './MsgModal';
 import DialogBox from './DialogBox';
 //Styles
 import styles from './ImageSelector.module.css';
+
+// 🔴🔴🔴 ARQUIVO CORRETO SENDO CARREGADO! 🔴🔴🔴
+console.log('🔴🔴🔴 SMARTSTAGEFORM - ARQUIVO CORRETO CARREGADO EM:', new Date().toLocaleTimeString());
 
 const SmartStageForm = ({
     currentForm,
@@ -28,53 +31,75 @@ const SmartStageForm = ({
     const [questionDialog, setQuestionDialog] = useState('');
     const [isopen, setIsOpen] = useState(false);
 
-    // Para SuggestionFeed, detectar automaticamente qual estrutura usar
+    // Para SuggestionFeed, verificar estrutura de dados
     const isSuggestionFeed = openedFrom === 'suggestions-feed';
-    
-    // Calcular quantidade de imagens corretamente
-    let imgQty;
-    if (isSuggestionFeed && currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
-        // Para SuggestionFeed: contar imagens no array inputImages
-        imgQty = currentForm.inputImages.length;
-    } else {
-        // Para outras rotas: contar formulários
-        imgQty = forms.length;
-    }
-    const credits = imgQty * 100;
-    const selectedIndex = selectedIndexes[formIndex];
+
+    // DEBUG: Logs das props recebidas - VERSÃO 2025
+    console.log('� SMARTSTAGEFORM NOVA VERSÃO - Props recebidas:');
+    console.log('� table:', table);
+    console.log('� openedFrom:', openedFrom);
+    console.log('� isSuggestionFeed:', isSuggestionFeed);
+    console.log('� handleSubmit type:', typeof handleSubmit);
 
     // LÓGICA ROBUSTA PARA DETECTAR ESTRUTURA DE DADOS
     let displayImages = [];
     let mainDisplayImage = null;
     
-    if (isSuggestionFeed) {
-        // Para suggestion feed, tentar diferentes estruturas na ordem de prioridade
+    if (table === "Image suggestions") {
+        // ROTA 3: SUGGESTIONFEED - Usar currentForm.imgUrls (não inputImages!)
+        console.log('🔍 ROTA 3 - Detectando imagens em currentForm.imgUrls:', currentForm?.imgUrls?.length);
         if (currentForm?.imgUrls && Array.isArray(currentForm.imgUrls)) {
-            // Estrutura vinda do ImageSelector (/suggestionfeed)
             displayImages = currentForm.imgUrls;
             mainDisplayImage = currentForm.imgUrls[currentImageIndex || 0];
+            console.log('🔍 ROTA 3 - Usando currentForm.imgUrls:', displayImages.length, 'imagens');
         } else if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
-            // Estrutura vinda do Feed de Sugestões direto
+            // Fallback para inputImages se imgUrls não existir
             displayImages = currentForm.inputImages;
             mainDisplayImage = currentForm.inputImages[currentImageIndex || 0];
+            console.log('🔍 ROTA 3 - Fallback para currentForm.inputImages:', displayImages.length, 'imagens');
         } else if (forms && forms.length > 0 && forms[0]?.imgUrls) {
-            // Fallback: tentar forms[0].imgUrls
+            // Fallback: usar forms[0].imgUrls
             displayImages = forms[0].imgUrls;
             mainDisplayImage = forms[0].imgUrls[currentImageIndex || 0];
+            console.log('🔍 ROTA 3 - Fallback para forms[0].imgUrls:', displayImages.length, 'imagens');
+        } else {
+            displayImages = [];
+            mainDisplayImage = null;
+            console.log('🔍 ROTA 3 - Nenhuma imagem encontrada');
+        }
+    } else if (isSuggestionFeed) {
+        // ROTA 1: IMOBPROPERTY -> FEED DE SUGESTÕES - Usar inputImages
+        if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
+            displayImages = currentForm.inputImages;
+            mainDisplayImage = currentForm.inputImages[currentImageIndex || 0];
         } else if (forms && forms.length > 0 && forms[0]?.inputImages) {
-            // Fallback: tentar forms[0].inputImages
             displayImages = forms[0].inputImages;
             mainDisplayImage = forms[0].inputImages[currentImageIndex || 0];
         } else {
-            // Último recurso: usar imgUrl único
             displayImages = [currentForm?.imgUrl].filter(Boolean);
             mainDisplayImage = currentForm?.imgUrl;
         }
     } else {
-        // Para rota normal - usar imgUrl único
+        // ROTA 2: IMOBPROPERTY -> IMAGESELECTOR - Usar imgUrl padrão
         displayImages = [currentForm?.imgUrl].filter(Boolean);
         mainDisplayImage = currentForm?.imgUrl;
     }
+
+    // Calcular quantidade de imagens corretamente baseado na estrutura detectada
+    let imgQty;
+    if (table === "Image suggestions") {
+        // ROTA 3: SUGGESTIONFEED - Contar imagens no displayImages (que já detectou imgUrls)
+        imgQty = displayImages.length;
+        console.log('🔍 ROTA 3 - imgQty calculado:', imgQty, 'baseado em displayImages');
+    } else if (isSuggestionFeed) {
+        // ROTA 1: IMOBPROPERTY -> FEED DE SUGESTÕES - Contar inputImages
+        imgQty = displayImages.length;
+    } else {
+        // ROTA 2: IMOBPROPERTY -> IMAGESELECTOR - Contar formulários
+        imgQty = forms.length;
+    }
+    const credits = imgQty * 100;
+    const selectedIndex = selectedIndexes[formIndex];
 
     // Função para obter o título baseado no modelo selecionado
     const getFormTitle = () => {
@@ -87,6 +112,10 @@ const SmartStageForm = ({
     };
 
     const actionScript = (act) => {
+        console.log('🚀 ACTION SCRIPT CALLED:', act);
+        console.log('🚀 currentForm na actionScript:', JSON.stringify(currentForm, null, 2));
+        console.log('🚀 handleSubmit function na actionScript:', typeof handleSubmit);
+        
         setOpenDialogBox(false);
         setIsOpen(false);
         setAction("");
@@ -94,6 +123,7 @@ const SmartStageForm = ({
         if (act === "Cancelar") {
             return;
         } else if (act === "Ok") {
+            console.log('🚀 CHAMANDO handleSubmit() da actionScript');
             handleSubmit()
         }
     }
@@ -184,18 +214,22 @@ const SmartStageForm = ({
 
     const RETIRAR = ['Sim', 'Não'];
 
-    const handleEnviarClick = () => {
-        handleOpenDialogBox(); // Usar o modal de confirmação em vez de submeter diretamente
-    };
-
     // Função para verificar se um formulário está preenchido
     const isFormComplete = (form) => {
-        if (openedFrom === 'suggestions-feed') {
-            // Para SuggestionFeed, não exigir campo 'tipo'
-            return form.retirar;
+        console.log('🔍 isFormComplete - form:', JSON.stringify(form, null, 2));
+        console.log('🔍 isFormComplete - table:', table);
+        console.log('🔍 isFormComplete - openedFrom:', openedFrom);
+        
+        if (table === "Image suggestions" || openedFrom === 'suggestions-feed') {
+            // Para ROTA 3: SUGGESTIONFEED e ROTA 1: FEED DE SUGESTÕES, não exigir campo 'tipo'
+            const isComplete = form.retirar;
+            console.log('🔍 isFormComplete - ROTA 3/1 - form.retirar:', form.retirar, '- isComplete:', isComplete);
+            return isComplete;
         } else {
-            // Para outras rotas, exigir ambos os campos
-            return form.tipo && form.retirar;
+            // Para ROTA 2: IMAGESELECTOR, exigir ambos os campos
+            const isComplete = form.tipo && form.retirar;
+            console.log('🔍 isFormComplete - ROTA 2 - form.tipo:', form.tipo, '- form.retirar:', form.retirar, '- isComplete:', isComplete);
+            return isComplete;
         }
     };
 
@@ -214,31 +248,18 @@ const SmartStageForm = ({
                 
                 {/* THUMBNAILS - VERSÃO ROBUSTA */}
                 {(() => {
-                    // Usar a mesma lógica robusta para detectar imagens
-                    let imagesToShow = [];
+                    // Usar as imagens já detectadas na lógica principal
+                    let imagesToShow = displayImages;
                     let activeIndex = 0;
 
-                    if (isSuggestionFeed) {
-                        // Para suggestion feed, detectar automaticamente qual estrutura usar
-                        if (currentForm?.imgUrls && Array.isArray(currentForm.imgUrls)) {
-                            // Estrutura vinda do ImageSelector (/suggestionfeed)
-                            imagesToShow = currentForm.imgUrls;
-                            activeIndex = currentImageIndex || 0;
-                        } else if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
-                            // Estrutura vinda do Feed de Sugestões direto
-                            imagesToShow = currentForm.inputImages;
-                            activeIndex = currentImageIndex || 0;
-                        } else if (forms && forms.length > 0 && forms[0]?.imgUrls) {
-                            // Fallback: tentar forms[0].imgUrls
-                            imagesToShow = forms[0].imgUrls;
-                            activeIndex = currentImageIndex || 0;
-                        } else if (forms && forms.length > 0 && forms[0]?.inputImages) {
-                            // Fallback: tentar forms[0].inputImages
-                            imagesToShow = forms[0].inputImages;
-                            activeIndex = currentImageIndex || 0;
-                        }
+                    if (table === "Image suggestions") {
+                        // ROTA 3: SUGGESTIONFEED - currentImageIndex controla qual imagem está ativa
+                        activeIndex = currentImageIndex || 0;
+                    } else if (isSuggestionFeed) {
+                        // ROTA 1: IMOBPROPERTY -> FEED DE SUGESTÕES - currentImageIndex controla qual imagem está ativa
+                        activeIndex = currentImageIndex || 0;
                     } else {
-                        // Para rota normal: usar forms array
+                        // ROTA 2: IMOBPROPERTY -> IMAGESELECTOR - formIndex controla qual formulário está ativo
                         imagesToShow = forms.map(form => form.imgUrl).filter(Boolean);
                         activeIndex = formIndex || 0;
                     }
@@ -315,8 +336,8 @@ const SmartStageForm = ({
                     Preencha o formulário para enviar nova imagem para processamento. Quanto melhor a qualidade da imagem enviada, melhor o resultado final ;)
                 </h6>
                 <form className={styles.formAreaGrid} onSubmit={e => e.preventDefault()}>
-                    {/* Campo Tipo de ambiente - esconder apenas para SuggestionFeed */}
-                    {openedFrom !== 'suggestions-feed' && (
+                    {/* Campo Tipo de ambiente - mostrar apenas na ROTA 2: IMOBPROPERTY -> IMAGESELECTOR */}
+                    {table !== "Image suggestions" && openedFrom !== 'suggestions-feed' && (
                         <div className="mb-3">
                             <label className="form-label d-flex text-start fw-bold">
                                 Tipo de ambiente*
@@ -412,8 +433,8 @@ const SmartStageForm = ({
                         </h6>
                     </div>
                     <div className={styles.formNavGrid} style={{ marginTop: '2.2rem', padding: '0 1.2rem 1.2rem 1.2rem' }}>
-                        {/* Para SuggestionFeed, apenas mostrar botão Enviar */}
-                        {isSuggestionFeed ? (
+                        {/* Para rota 3 (table === "Image suggestions"), pular modal e ir direto para handleSubmit */}
+                        {table === "Image suggestions" ? (
                             <button
                                 type="button"
                                 className="btn"
@@ -426,11 +447,41 @@ const SmartStageForm = ({
                                     padding: '0.6em 1.2em',
                                     borderRadius: '8px',
                                     boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
-                                    opacity: !currentForm.retirar ? 0.7 : 1,
+                                    opacity: !isFormComplete(currentForm) ? 0.7 : 1,
+                                    width: '100%'
+                                }}
+                                onClick={() => {
+                                    // Versão final - dados corretos para backend
+                                    const formData = {
+                                        ...currentForm,
+                                        inputImages: currentForm.imgUrls
+                                    };
+                                    
+                                    handleSubmit(formData);
+                                }}
+                                disabled={!isFormComplete(currentForm)}
+                            >
+                                Enviar
+                            </button>
+                        ) : isSuggestionFeed ? (
+                            /* Para rota 1 (openedFrom === 'suggestions-feed'), mostrar modal normalmente */
+                            <button
+                                type="button"
+                                className="btn"
+                                style={{
+                                    backgroundColor: '#68bf6c',
+                                    color: '#fff',
+                                    border: 'none',
+                                    fontWeight: 600,
+                                    fontSize: '1.1em',
+                                    padding: '0.6em 1.2em',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
+                                    opacity: !isFormComplete(currentForm) ? 0.7 : 1,
                                     width: '100%'
                                 }}
                                 onClick={handleOpenDialogBox}
-                                disabled={!currentForm.retirar}
+                                disabled={!isFormComplete(currentForm)}
                             >
                                 Enviar
                             </button>
@@ -470,11 +521,11 @@ const SmartStageForm = ({
                                             padding: '0.6em 1.2em',
                                             borderRadius: '8px',
                                             boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
-                                            opacity: (!currentForm.tipo || !currentForm.retirar) ? 0.7 : 1,
+                                            opacity: !isFormComplete(currentForm) ? 0.7 : 1,
                                             width: '100%'
                                         }}
                                         onClick={handleNext}
-                                        disabled={!currentForm.tipo || !currentForm.retirar}
+                                        disabled={!isFormComplete(currentForm)}
                                     >
                                         Próxima
                                     </button>
@@ -491,11 +542,23 @@ const SmartStageForm = ({
                                             padding: '0.6em 1.2em',
                                             borderRadius: '8px',
                                             boxShadow: '0 2px 8px rgba(104,191,108,0.10)',
-                                            opacity: forms.some(f => !f.tipo || !f.retirar) ? 0.7 : 1,
+                                            opacity: forms.some(f => !isFormComplete(f)) ? 0.7 : 1,
                                             width: '100%'
                                         }}
-                                        onClick={handleOpenDialogBox}
-                                        disabled={forms.some(f => !f.tipo || !f.retirar)}
+                                        onClick={(e) => {
+                                            console.log('🔍 BUTTON CLICK DEBUG:');
+                                            console.log('🔍 forms.some(f => !isFormComplete(f)):', forms.some(f => !isFormComplete(f)));
+                                            console.log('🔍 button disabled:', forms.some(f => !isFormComplete(f)));
+                                            
+                                            if (forms.some(f => !isFormComplete(f))) {
+                                                console.log('❌ Button is disabled - preventing click');
+                                                e.preventDefault();
+                                                return;
+                                            }
+                                            
+                                            handleOpenDialogBox(e);
+                                        }}
+                                        disabled={forms.some(f => !isFormComplete(f))}
                                     >
                                         Enviar
                                     </button>

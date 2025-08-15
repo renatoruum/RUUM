@@ -128,6 +128,42 @@ const ImobProperty = ({ softrEmail }) => {
         return text.substring(0, maxLength - 3) + '...';
     };
 
+    // Função separada para atualizar status das sugestões usando a nova rota dedicada
+    const updateSuggestionStatus = async (suggestionIds) => {
+        if (!suggestionIds || suggestionIds.length === 0) {
+            console.log('Nenhum ID de sugestão para atualizar');
+            return;
+        }
+
+        console.log('🔄 Iniciando atualização de status via nova rota para:', suggestionIds);
+        
+        try {
+            // Importar apiCall para usar a nova rota
+            const { apiCall } = await import('../Config/Config');
+            
+            const response = await apiCall("/api/update-suggestion-fields", {
+                method: "POST",
+                body: JSON.stringify({
+                    suggestionIds: suggestionIds,
+                    status: "Approved"
+                })
+            });
+
+            if (response && response.success) {
+                console.log(`✅ Status atualizado com sucesso: ${response.data.updated} atualizações, ${response.data.errors} erros`);
+                
+                if (response.data.errors > 0) {
+                    console.warn(`⚠️ Algumas atualizações falharam:`, response.data.details);
+                }
+            } else {
+                throw new Error(response?.message || 'Falha na atualização do status');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao atualizar status das sugestões:', error.message);
+            throw error; // Re-throw para ser capturado no handleSuggestionSubmit
+        }
+    };
+
     // Função para buscar o plano do cliente pelo nome
     const getClientTable = async (clientid) => {
         setLoading(true);
@@ -516,6 +552,12 @@ const ImobProperty = ({ softrEmail }) => {
     };
 
     const handleSuggestionSubmit = async (formData) => {
+        console.log('🚀🚀🚀 INICIANDO handleSuggestionSubmit 🚀🚀🚀');
+        console.log('🚀 URL ATUAL:', window.location.href);
+        console.log('🚀 PATHNAME:', window.location.pathname);
+        console.log('🚀 HASH:', window.location.hash);
+        console.log('🚀 formData recebido:', JSON.stringify(formData, null, 2));
+        
         setSavingSuggestion(true); // Iniciar loader
         
         try {
@@ -528,9 +570,18 @@ const ImobProperty = ({ softrEmail }) => {
             if (formData && formData.inputImages) {
                 // Caso 1: formData contém inputImages (estrutura esperada)
                 currentForm = formData;
+                console.log('🔍 DEBUG - Usando formData com inputImages:', currentForm.inputImages?.length, 'imagens');
+            } else if (formData && formData.imgUrls) {
+                // Caso 2: formData contém imgUrls (pode acontecer na rota suggestionfeed)
+                currentForm = {
+                    ...formData,
+                    inputImages: formData.imgUrls // Converter imgUrls para inputImages
+                };
+                console.log('🔍 DEBUG - Convertendo formData.imgUrls para inputImages:', currentForm.inputImages?.length, 'imagens');
             } else if (suggestionForms[0] && suggestionForms[0].inputImages) {
-                // Caso 2: usar suggestionForms[0] como fallback
+                // Caso 3: usar suggestionForms[0] como fallback
                 currentForm = suggestionForms[0];
+                console.log('🔍 DEBUG - Usando suggestionForms[0] com inputImages:', currentForm.inputImages?.length, 'imagens');
                 
                 // Se formData existe, mesclar os dados atualizados do formulário
                 if (formData) {
@@ -538,50 +589,279 @@ const ImobProperty = ({ softrEmail }) => {
                         ...suggestionForms[0],
                         ...formData // Sobrescrever com dados atualizados do formulário
                     };
+                    
+                    // Se formData tem imgUrls mas não inputImages, converter
+                    if (formData.imgUrls && !formData.inputImages) {
+                        currentForm.inputImages = formData.imgUrls;
+                        console.log('🔍 DEBUG - Convertendo formData.imgUrls para currentForm.inputImages:', currentForm.inputImages?.length, 'imagens');
+                    }
+                }
+            } else if (suggestionForms[0] && suggestionForms[0].imgUrls) {
+                // Caso 4: suggestionForms[0] tem imgUrls em vez de inputImages
+                currentForm = {
+                    ...suggestionForms[0],
+                    inputImages: suggestionForms[0].imgUrls // Converter imgUrls para inputImages
+                };
+                console.log('🔍 DEBUG - Convertendo suggestionForms[0].imgUrls para inputImages:', currentForm.inputImages?.length, 'imagens');
+                
+                // Se formData existe, mesclar os dados atualizados do formulário
+                if (formData) {
+                    currentForm = {
+                        ...currentForm,
+                        ...formData // Sobrescrever com dados atualizados do formulário
+                    };
                 }
             } else {
+                console.error('❌ ERRO - Nenhuma estrutura de dados válida encontrada');
+                console.error('❌ formData:', JSON.stringify(formData, null, 2));
+                console.error('❌ suggestionForms[0]:', JSON.stringify(suggestionForms[0], null, 2));
                 throw new Error('Nenhuma imagem encontrada para processar');
             }
             
-            // Cada imagem deve gerar um registro separado na tabela "Images"
-            const imagesArray = currentForm.inputImages.map(imageUrl => ({
-                // Usar a mesma estrutura que funciona no ImageSelector
-                imgUrl: imageUrl,
-                imgUrls: [imageUrl], // Array com uma imagem para manter compatibilidade
-                "INPUT IMAGES": [imageUrl], // Campo específico para o Airtable - SEMPRE incluir
-                tipo: currentForm.tipo || '',
-                retirar: currentForm.retirar || '',
-                codigo: currentForm.codigo || '',
-                propertyUrl: currentForm.propertyUrl || '',
-                observacoes: currentForm.observacoes || '',
-                estilo: currentForm.estilo || '',
-                acabamento: currentForm.acabamento || '',
-                imagensReferencia: currentForm.imagensReferencia || [],
-                modeloVideo: currentForm.modeloVideo || '',
-                formatoVideo: currentForm.formatoVideo || '',
-                imgWorkflow: currentForm.imgWorkflow || '',
-                message: currentForm.message || '' // Adicionar campo Message
-            }));
+            // CORREÇÃO: Detectar rota baseado nos dados disponíveis e validação robusta
+            console.log('🔍 DEBUG - INÍCIO DETECÇÃO DE ROTA');
+            console.log('🔍 DEBUG - currentForm:', JSON.stringify(currentForm, null, 2));
+            console.log('🔍 DEBUG - suggestionForms[0]:', JSON.stringify(suggestionForms[0], null, 2));
+            console.log('🔍 DEBUG - window.location.pathname:', window.location.pathname);
+            console.log('🔍 DEBUG - window.location.hash:', window.location.hash);
+            
+            // Para rota 3 (suggestionfeed), usar tabela "Image suggestions" com um único registro
+            // Para outras rotas, usar tabela "Images" com registros individuais
+            let imagesArray;
+            let targetTable;
+            
+            // DETECÇÃO MAIS ROBUSTA DAS ROTAS
+            
+            // Detectar se é ROTA 1: Baseado no openedFrom dos forms sendo 'suggestions-feed'
+            const hasOpenedFromSuggestionsFeed = (suggestionForms[0]?.openedFrom === 'suggestions-feed') || 
+                                               (currentForm?.openedFrom === 'suggestions-feed');
+            
+            // Detectar se é ROTA 3: Baseado na URL contendo 'suggestionfeed' E não sendo ROTA 1
+            const isUrlSuggestionFeed = window.location.pathname.includes('suggestionfeed') ||
+                                       window.location.hash.includes('suggestionfeed');
+            
+            // ROTA 3 tem prioridade: se a URL tem suggestionfeed E não é ROTA 1, então é ROTA 3
+            const isRoute3 = isUrlSuggestionFeed && !hasOpenedFromSuggestionsFeed;
+            const isRoute1 = hasOpenedFromSuggestionsFeed && !isRoute3;
+            
+            console.log('🔍 DEBUG - hasOpenedFromSuggestionsFeed:', hasOpenedFromSuggestionsFeed);
+            console.log('🔍 DEBUG - isUrlSuggestionFeed:', isUrlSuggestionFeed);
+            console.log('🔍 DEBUG - isRoute1 (imobproperty → suggestions-feed):', isRoute1);
+            console.log('🔍 DEBUG - isRoute3 (suggestionfeed direto):', isRoute3);
+            
+            // Validar se temos dados essenciais antes de prosseguir
+            if (!currentForm?.inputImages || !Array.isArray(currentForm.inputImages) || currentForm.inputImages.length === 0) {
+                console.error('❌ ERRO: currentForm.inputImages não encontrado ou vazio');
+                throw new Error('Nenhuma imagem encontrada para processar. Verifique se as imagens foram selecionadas corretamente.');
+            }
+            
+            console.log('🔍 DEBUG - currentForm.inputImages válido:', currentForm.inputImages.length, 'imagens');
+            
+            // FORÇAR ROTA 3 SE URL CONTÉM SUGGESTIONFEED (correção para garantir detecção)
+            const forceRoute3 = window.location.href.includes('suggestionfeed');
+            const finalIsRoute3 = isRoute3 || forceRoute3;
+            const finalIsRoute1 = isRoute1 && !forceRoute3;
+            
+            console.log('🔍 DEBUG - ROTAS FINAIS:');
+            console.log('🔍 DEBUG - finalIsRoute1:', finalIsRoute1);
+            console.log('🔍 DEBUG - finalIsRoute3:', finalIsRoute3);
+            
+            if (finalIsRoute1) {
+                // ROTA 1: imobproperty -> feed de sugestões - Tabela "Images" com registros individuais
+                console.log('🔍 DEBUG - CONFIGURANDO ROTA 1: FEED DE SUGESTÕES → IMAGES (registros individuais)');
+                targetTable = "Images";
+                imagesArray = currentForm.inputImages.map((imageUrl, index) => {
+                    console.log(`🔍 DEBUG - Criando registro ${index + 1} para imagem:`, imageUrl);
+                    return {
+                        imgUrl: imageUrl,
+                        imgUrls: [imageUrl],
+                        "INPUT IMAGES": [imageUrl],
+                        tipo: currentForm.tipo || '',
+                        retirar: currentForm.retirar || 'Não',
+                        codigo: currentForm.codigo || '',
+                        propertyUrl: currentForm.propertyUrl || '',
+                        observacoes: currentForm.observacoes || '',
+                        estilo: currentForm.estilo || '',
+                        acabamento: currentForm.acabamento || 'Não',
+                        imagensReferencia: currentForm.imagensReferencia || [],
+                        modeloVideo: currentForm.modeloVideo || '',
+                        formatoVideo: currentForm.formatoVideo || '',
+                        imgWorkflow: currentForm.imgWorkflow || 'SmartStage',
+                        message: currentForm.message || '',
+                        client: clientInfos?.Email || '',
+                        status: 'Pending'
+                    };
+                });
+            } else if (finalIsRoute3) {
+                // ROTA 3: suggestionfeed - Tabela "Image suggestions" com um único registro
+                console.log('🔍 DEBUG - CONFIGURANDO ROTA 3: SUGGESTIONFEED → IMAGE SUGGESTIONS (registro único)');
+                targetTable = "Image suggestions";
+                const propertyFields = selectedSuggestion?.fields || {};
+                console.log('🔍 DEBUG - propertyFields:', JSON.stringify(propertyFields, null, 2));
+                
+                imagesArray = [{
+                    imgUrls: currentForm.inputImages, // Array de todas as imagens
+                    imgUrl: currentForm.inputImages[0], // Primeira imagem para compatibilidade
+                    "INPUT IMAGES": currentForm.inputImages, // Campo específico para o Airtable
+                    tipo: currentForm.tipo || '',
+                    retirar: currentForm.retirar || 'Não',
+                    codigo: currentForm.codigo || propertyFields['Client Internal Code'] || '',
+                    propertyUrl: currentForm.propertyUrl || propertyFields["Property's URL"] || '',
+                    observacoes: currentForm.observacoes || '',
+                    estilo: currentForm.estilo || '',
+                    acabamento: currentForm.acabamento || 'Não',
+                    imagensReferencia: currentForm.imagensReferencia || [],
+                    modeloVideo: currentForm.modeloVideo || '',
+                    formatoVideo: currentForm.formatoVideo || '',
+                    imgWorkflow: currentForm.imgWorkflow || 'SmartStage',
+                    message: currentForm.message || '',
+                    // CORREÇÃO CRÍTICA: Campo correto para a tabela "Image suggestions"
+                    "Suggestion Status": "Suggested", // Campo com espaço e maiúscula
+                    preco: currentForm.preco || propertyFields?.Valor || propertyFields?.Preço || '',
+                    endereco: currentForm.endereco || (
+                        propertyFields?.Bairro && propertyFields?.Cidade
+                            ? propertyFields.Bairro + ' - ' + propertyFields.Cidade
+                            : propertyFields?.Bairro ?? propertyFields?.Cidade ?? propertyFields?.Endereço ?? ''
+                    ),
+                    destaques: currentForm.destaques || propertyFields?.Destaques || [],
+                    client: clientInfos?.Email || '',
+                    status: 'Pending'
+                }];
+                
+                // DEBUG CRÍTICO: Verificar o que está sendo enviado para INPUT IMAGES
+                console.log('🔍 DEBUG CRÍTICO - ROTA 3 INPUT IMAGES:');
+                console.log('🔍 currentForm.inputImages:', JSON.stringify(currentForm.inputImages, null, 2));
+                console.log('🔍 currentForm.inputImages.length:', currentForm.inputImages?.length);
+                console.log('🔍 Tipo de currentForm.inputImages:', Array.isArray(currentForm.inputImages) ? 'Array' : typeof currentForm.inputImages);
+                console.log('🔍 imagesArray[0]["INPUT IMAGES"]:', JSON.stringify(imagesArray[0]["INPUT IMAGES"], null, 2));
+                console.log('🔍 Length do campo "INPUT IMAGES":', imagesArray[0]["INPUT IMAGES"]?.length);
+            } else {
+                // Fallback para outras situações
+                targetTable = "Images";
+                imagesArray = currentForm.inputImages.map(imageUrl => ({
+                    imgUrl: imageUrl,
+                    imgUrls: [imageUrl],
+                    "INPUT IMAGES": [imageUrl],
+                    tipo: currentForm.tipo || '',
+                    retirar: currentForm.retirar || 'Não',
+                    codigo: currentForm.codigo || '',
+                    propertyUrl: currentForm.propertyUrl || '',
+                    observacoes: currentForm.observacoes || '',
+                    estilo: currentForm.estilo || '',
+                    acabamento: currentForm.acabamento || 'Não',
+                    imagensReferencia: currentForm.imagensReferencia || [],
+                    modeloVideo: currentForm.modeloVideo || '',
+                    formatoVideo: currentForm.formatoVideo || '',
+                    imgWorkflow: currentForm.imgWorkflow || 'SmartStage',
+                    message: currentForm.message || '',
+                    client: clientInfos?.Email || '',
+                    status: 'Pending'
+                }));
+            }
 
-            // Objeto para envio ao backend - salvando na tabela "Images" para processamento
+            console.log('🔍 DEBUG - ROTA DETECTADA:', isRoute1 ? 'ROTA 1' : isRoute3 ? 'ROTA 3' : 'OUTRA');
+            console.log('🔍 DEBUG - TABELA SELECIONADA:', targetTable);
+            console.log('🔍 DEBUG - imagesArray enviado:', JSON.stringify(imagesArray, null, 2));
+
+            // Validar se temos dados essenciais antes de enviar
+            if (!imagesArray || imagesArray.length === 0) {
+                throw new Error('Nenhuma imagem encontrada para processar');
+            }
+            
+            if (!clientInfos?.Email) {
+                console.warn('⚠️ Email do cliente não encontrado');
+            }
+            
+            if (!clientInfos?.ClientId) {
+                console.warn('⚠️ ClientId não encontrado');
+            }
+
+            // Objeto para envio ao backend - usar tabela específica baseada na rota
             const requestData = {
                 imagesArray: imagesArray,
                 email: clientInfos?.Email,
                 clientId: clientInfos?.ClientId,
                 invoiceId: clientInfos?.InvoiceId,
                 userId: clientInfos?.UserId,
-                table: "Images" // Mudar para tabela de processamento
+                table: targetTable // CRÍTICO: Usar tabela correta baseada na rota detectada
             };
 
+            console.log('🔍 DEBUG - requestData enviado:', JSON.stringify(requestData, null, 2));
+            console.log('🔍 DEBUG - TABLE ENVIADA:', requestData.table);
+            console.log('🔍 DEBUG - EXPECTATIVA ROTA 1:', finalIsRoute1 ? `Criar ${imagesArray.length} registros individuais na tabela Images` : 'N/A');
+            console.log('🔍 DEBUG - EXPECTATIVA ROTA 3:', finalIsRoute3 ? 'Criar 1 registro com todas as imagens na tabela Image suggestions' : 'N/A');
+
             // Usar o mesmo endpoint que funciona no ImageSelector
-            const data = await apiCall("/api/update-images-airtable", {
-                method: "POST",
-                body: JSON.stringify(requestData)
-            });
+            console.log('🚀 Enviando dados para API...');
+            
+            let data;
+            try {
+                console.log('🔄 DEBUG - Iniciando chamada da API com payload:', JSON.stringify(requestData, null, 2));
+                data = await apiCall("/api/update-images-airtable", {
+                    method: "POST",
+                    body: JSON.stringify(requestData)
+                });
+                console.log('✅ Resposta da API recebida:', data);
+            } catch (apiError) {
+                console.error('❌ Erro na chamada da API:', apiError);
+                console.error('📊 Dados que causaram o erro:', JSON.stringify(requestData, null, 2));
+                
+                // Log detalhado do erro
+                console.error('❌ DEBUG - ERRO DETALHADO DA API:');
+                console.error('❌ DEBUG - Error object:', apiError);
+                console.error('❌ DEBUG - Error message:', apiError.message);
+                console.error('❌ DEBUG - Error stack:', apiError.stack);
+                
+                // Extrair mais informações se disponível
+                if (apiError.response) {
+                    console.error('❌ DEBUG - Response status:', apiError.response.status);
+                    console.error('❌ DEBUG - Response statusText:', apiError.response.statusText);
+                    console.error('❌ DEBUG - Response data:', apiError.response.data);
+                    console.error('❌ DEBUG - Response headers:', apiError.response.headers);
+                } else if (apiError.request) {
+                    console.error('❌ DEBUG - Request feito mas sem resposta:', apiError.request);
+                } else {
+                    console.error('❌ DEBUG - Erro na configuração da requisição:', apiError.message);
+                }
+                
+                // Validar estrutura dos dados enviados
+                console.log('🔍 DEBUG - VALIDANDO ESTRUTURA DOS DADOS:');
+                console.log('🔍 DEBUG - imagesArray é array?', Array.isArray(requestData.imagesArray));
+                console.log('🔍 DEBUG - imagesArray length:', requestData.imagesArray?.length);
+                console.log('🔍 DEBUG - table está definida?', !!requestData.table);
+                console.log('🔍 DEBUG - email está definido?', !!requestData.email);
+                
+                // Tentar identificar o tipo de erro e dar feedback específico
+                if (apiError.message.includes('500')) {
+                    console.error('🔴 Erro 500 - Erro interno do servidor. Verificar logs do backend.');
+                    console.error('🔴 Possíveis causas: problema na conexão com Airtable, estrutura de dados incorreta, ou limite de API excedido.');
+                    throw new Error('Erro interno do servidor (500). Verifique: 1) Se a tabela "' + requestData.table + '" existe no Airtable, 2) Se os campos estão corretos, 3) Se não há limite de API excedido. Tente novamente em alguns minutos.');
+                } else if (apiError.message.includes('400')) {
+                    console.error('🔴 Erro 400 - Dados inválidos enviados para a API.');
+                    throw new Error('Dados inválidos. Verifique se todos os campos obrigatórios foram preenchidos corretamente.');
+                } else if (apiError.message.includes('network') || apiError.message.includes('timeout')) {
+                    console.error('🔴 Erro de rede ou timeout.');
+                    throw new Error('Problema de conexão. Verifique sua internet e tente novamente.');
+                } else {
+                    throw new Error('Erro ao comunicar com o servidor: ' + (apiError.message || 'Erro desconhecido'));
+                }
+            }
+
+            console.log('🔍 DEBUG - RESPOSTA DO BACKEND:', data);
+            console.log('🔍 DEBUG - Se houve registros extras criados, o problema está no BACKEND na função upsetImagesInAirtable');
 
             setSavingSuggestion(false); // Parar loader
             
             if (data) {
+                // APÓS o sucesso do processamento, atualizar o status das sugestões via nova rota
+                try {
+                    await updateSuggestionStatus(currentForm.originalSuggestionIds);
+                    console.log('✅ Status das sugestões atualizado com sucesso via rota dedicada');
+                } catch (statusError) {
+                    console.error('❌ Erro ao atualizar status das sugestões via rota dedicada:', statusError);
+                    // Não interromper o fluxo - o processamento foi bem-sucedido
+                }
+                
                 // Mostrar confetti igual ao ImageSelector
                 setShowSuggestionConfetti(true);
                 setTimeout(() => {
@@ -823,8 +1103,8 @@ const ImobProperty = ({ softrEmail }) => {
                                     onNavigateToImage={handleSuggestionNavigateToImage}
                                     onRemoveImage={handleSuggestionRemoveImage}
                                     onOriginalClose={closeSuggestionForm}
-                                    table={"Images"}
-                                    openedFrom={'suggestions-feed'}
+                                    table={window.location.href.includes('suggestionfeed') ? "Image suggestions" : "Images"}
+                                    openedFrom={window.location.href.includes('suggestionfeed') ? undefined : 'suggestions-feed'}
                                 />
                             )}
                         </CustomModal>

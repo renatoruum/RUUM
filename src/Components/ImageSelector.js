@@ -229,10 +229,13 @@ const ImageSelector = ({
     if (table === "Image suggestions") {
       const form = forms[0]; // Único formulário para todas as imagens
       
+      // CORREÇÃO: Usar inputImages se existir, senão usar imgUrls
+      const finalInputImages = form.inputImages || form.imgUrls;
+      
       imagesArray = [{
         imgUrls: form.imgUrls, // Array de URLs das imagens
         imgUrl: form.imgUrls[0], // Primeira imagem para compatibilidade com backend
-        "INPUT IMAGES": form.imgUrls, // Campo específico para o Airtable
+        "INPUT IMAGES": finalInputImages, // Campo específico para o Airtable - CORRIGIDO
         tipo: form.tipo,
         retirar: form.retirar,
         codigo: property?.fields?.Codigo ?? '',
