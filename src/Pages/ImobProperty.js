@@ -117,7 +117,6 @@ const ImobProperty = ({ softrEmail }) => {
                 return null;
             }
         } catch (error) {
-            console.error('Erro ao buscar tabela do usuário:', error);
             return null;
         }
     }
@@ -131,16 +130,13 @@ const ImobProperty = ({ softrEmail }) => {
     // Função separada para atualizar status das sugestões usando a nova rota dedicada
     const updateSuggestionStatus = async (suggestionIds) => {
         if (!suggestionIds || suggestionIds.length === 0) {
-            console.log('Nenhum ID de sugestão para atualizar');
             return;
         }
 
-        console.log('🔄 Iniciando atualização de status via nova rota para:', suggestionIds);
-        
         try {
             // Importar apiCall para usar a nova rota
             const { apiCall } = await import('../Config/Config');
-            
+
             const response = await apiCall("/api/update-suggestion-fields", {
                 method: "POST",
                 body: JSON.stringify({
@@ -149,17 +145,10 @@ const ImobProperty = ({ softrEmail }) => {
                 })
             });
 
-            if (response && response.success) {
-                console.log(`✅ Status atualizado com sucesso: ${response.data.updated} atualizações, ${response.data.errors} erros`);
-                
-                if (response.data.errors > 0) {
-                    console.warn(`⚠️ Algumas atualizações falharam:`, response.data.details);
-                }
-            } else {
+            if (!response || !response.success) {
                 throw new Error(response?.message || 'Falha na atualização do status');
             }
         } catch (error) {
-            console.error('❌ Erro ao atualizar status das sugestões:', error.message);
             throw error; // Re-throw para ser capturado no handleSuggestionSubmit
         }
     };
@@ -193,7 +182,6 @@ const ImobProperty = ({ softrEmail }) => {
                 return null;
             }
         } catch (error) {
-            console.error('Erro ao buscar tabela do cliente:', error);
             return null;
         }
     };
@@ -264,12 +252,12 @@ const ImobProperty = ({ softrEmail }) => {
                                         const filteredRecords = records.filter(record => {
                                             const clientsField = record.fields['Clients'];
                                             const suggestionStatus = record.fields['Suggestion Status'];
-                                            
+
                                             // Verificar se pertence ao cliente E tem status "Suggested"
-                                            const belongsToClient = clientsField && Array.isArray(clientsField) 
+                                            const belongsToClient = clientsField && Array.isArray(clientsField)
                                                 ? clientsField.some(clientId => clientId === clientInfos.ClientId)
                                                 : false;
-                                            
+
                                             return belongsToClient && suggestionStatus === 'Suggested';
                                         });
                                         allSuggestions = allSuggestions.concat(filteredRecords);
@@ -302,9 +290,9 @@ const ImobProperty = ({ softrEmail }) => {
                 apiKey: process.env.REACT_APP_AIRTABLE_API_KEY,
             });
             const base = Airtable.base(process.env.REACT_APP_AIRTABLE_BASE_ID);
-            
+
             const record = await base('Styles').find(styleId);
-            
+
             const styleName = record.fields['Style Name'] || record.fields['Style Token'] || null;
             return styleName;
         } catch (error) {
@@ -315,25 +303,25 @@ const ImobProperty = ({ softrEmail }) => {
     // Função para agrupar sugestões por imóvel
     const groupSuggestionsByProperty = async (suggestions) => {
         const grouped = {};
-        
+
         for (const suggestion of suggestions) {
             const fields = suggestion.fields;
-            
+
             // Filtrar apenas registros com Suggestion Status = "Suggested"
             if (fields['Suggestion Status'] !== 'Suggested') {
                 continue; // Pular este registro
             }
-            
+
             const propertyCode = fields['Client Internal Code'] || 'Sem código';
-            
+
             if (!grouped[propertyCode]) {
                 // Buscar nome do estilo se STYLE existir
                 let estiloName = null;
-                
+
                 if (fields['STYLE'] && Array.isArray(fields['STYLE']) && fields['STYLE'].length > 0) {
                     estiloName = await getStyleName(fields['STYLE'][0]);
                 }
-                
+
                 grouped[propertyCode] = {
                     propertyCode,
                     address: fields['Endereço'] || 'Endereço não informado',
@@ -350,10 +338,10 @@ const ImobProperty = ({ softrEmail }) => {
                     originalSuggestionIds: []
                 };
             }
-            
+
             // Adicionar ID da sugestão original
             grouped[propertyCode].originalSuggestionIds.push(suggestion.id);
-            
+
             // Adicionar todas as imagens deste registro
             if (fields['INPUT IMAGE'] && Array.isArray(fields['INPUT IMAGE'])) {
                 fields['INPUT IMAGE'].forEach(image => {
@@ -364,7 +352,7 @@ const ImobProperty = ({ softrEmail }) => {
                 });
             }
         }
-        
+
         // Converter objeto para array
         return Object.values(grouped);
     };
@@ -419,10 +407,10 @@ const ImobProperty = ({ softrEmail }) => {
     const selectSuggestion = (property) => {
         // Determinar se é Atelier (tem estilo) ou SmartStage (não tem estilo)
         // Campo Style Name (from STYLE) retorna o nome do estilo como string
-        const hasStyle = property.estilo && 
-                        (typeof property.estilo === 'string' && property.estilo.trim() !== '');
+        const hasStyle = property.estilo &&
+            (typeof property.estilo === 'string' && property.estilo.trim() !== '');
         const isAtelier = hasStyle;
-        
+
         // Para suggestion feed, criar UM ÚNICO FORMULÁRIO com array de imagens (como estava antes)
         const initialForm = {
             inputImages: property.images.map(img => img.url), // Array com todas as URLs das imagens
@@ -437,7 +425,9 @@ const ImobProperty = ({ softrEmail }) => {
             originalSuggestionIds: property.originalSuggestionIds, // IDs das sugestões originais
             // Definir imgWorkflow baseado no tipo
             imgWorkflow: isAtelier ? 'Atelier' : 'SmartStage',
-            
+            // CRÍTICO: Campo para identificar a origem do formulário
+            openedFrom: 'suggestions-feed',
+
             // Campos específicos baseados no tipo de formulário
             ...(isAtelier ? {
                 // Campos do AtelierForm
@@ -465,7 +455,7 @@ const ImobProperty = ({ softrEmail }) => {
                 'OpenedFrom': 'suggestions-feed' // Controle de origem do formulário
             }
         };
-        
+
         setSelectedSuggestion(suggestionProperty);
         setSuggestionForms([initialForm]); // Um único formulário com array de imagens
         setSuggestionFormIndex(0);
@@ -487,8 +477,8 @@ const ImobProperty = ({ softrEmail }) => {
 
     // Funções para controle do formulário de sugestões
     const handleSuggestionFormChange = (field, value) => {
-        setSuggestionForms(prev => 
-            prev.map((form, idx) => 
+        setSuggestionForms(prev =>
+            prev.map((form, idx) =>
                 idx === suggestionFormIndex ? { ...form, [field]: value } : form
             )
         );
@@ -514,7 +504,7 @@ const ImobProperty = ({ softrEmail }) => {
     const handleSuggestionRemoveImage = (index) => {
         if (suggestionForms.length > 0 && suggestionForms[0].inputImages) {
             const currentForm = suggestionForms[0];
-            
+
             if (currentForm.inputImages.length <= 1) {
                 alert('Não é possível remover a última imagem selecionada.');
                 return;
@@ -538,7 +528,6 @@ const ImobProperty = ({ softrEmail }) => {
     const handleNavigateToImage = (targetIndex) => {
         // Não precisamos fazer nada aqui - o controle será feito pelo ImageSelector
         // A navegação será direta via setFormIndex no ImageSelector
-        console.log('ImobProperty handleNavigateToImage called with:', targetIndex);
     };
 
     // Função para remover imagem na rota normal
@@ -552,48 +541,38 @@ const ImobProperty = ({ softrEmail }) => {
     };
 
     const handleSuggestionSubmit = async (formData) => {
-        console.log('🚀🚀🚀 INICIANDO handleSuggestionSubmit 🚀🚀🚀');
-        console.log('🚀 URL ATUAL:', window.location.href);
-        console.log('🚀 PATHNAME:', window.location.pathname);
-        console.log('🚀 HASH:', window.location.hash);
-        console.log('🚀 formData recebido:', JSON.stringify(formData, null, 2));
-        
         setSavingSuggestion(true); // Iniciar loader
-        
+
         try {
             // Importar apiCall para usar o mesmo endpoint que funciona
             const { apiCall } = await import('../Config/Config');
-            
+
             // Determinar fonte dos dados - formData pode ser undefined ou ter estrutura diferente
             let currentForm;
-            
+
             if (formData && formData.inputImages) {
                 // Caso 1: formData contém inputImages (estrutura esperada)
                 currentForm = formData;
-                console.log('🔍 DEBUG - Usando formData com inputImages:', currentForm.inputImages?.length, 'imagens');
             } else if (formData && formData.imgUrls) {
                 // Caso 2: formData contém imgUrls (pode acontecer na rota suggestionfeed)
                 currentForm = {
                     ...formData,
                     inputImages: formData.imgUrls // Converter imgUrls para inputImages
                 };
-                console.log('🔍 DEBUG - Convertendo formData.imgUrls para inputImages:', currentForm.inputImages?.length, 'imagens');
             } else if (suggestionForms[0] && suggestionForms[0].inputImages) {
                 // Caso 3: usar suggestionForms[0] como fallback
                 currentForm = suggestionForms[0];
-                console.log('🔍 DEBUG - Usando suggestionForms[0] com inputImages:', currentForm.inputImages?.length, 'imagens');
-                
+
                 // Se formData existe, mesclar os dados atualizados do formulário
                 if (formData) {
                     currentForm = {
                         ...suggestionForms[0],
                         ...formData // Sobrescrever com dados atualizados do formulário
                     };
-                    
+
                     // Se formData tem imgUrls mas não inputImages, converter
                     if (formData.imgUrls && !formData.inputImages) {
                         currentForm.inputImages = formData.imgUrls;
-                        console.log('🔍 DEBUG - Convertendo formData.imgUrls para currentForm.inputImages:', currentForm.inputImages?.length, 'imagens');
                     }
                 }
             } else if (suggestionForms[0] && suggestionForms[0].imgUrls) {
@@ -602,8 +581,7 @@ const ImobProperty = ({ softrEmail }) => {
                     ...suggestionForms[0],
                     inputImages: suggestionForms[0].imgUrls // Converter imgUrls para inputImages
                 };
-                console.log('🔍 DEBUG - Convertendo suggestionForms[0].imgUrls para inputImages:', currentForm.inputImages?.length, 'imagens');
-                
+
                 // Se formData existe, mesclar os dados atualizados do formulário
                 if (formData) {
                     currentForm = {
@@ -612,93 +590,98 @@ const ImobProperty = ({ softrEmail }) => {
                     };
                 }
             } else {
-                console.error('❌ ERRO - Nenhuma estrutura de dados válida encontrada');
-                console.error('❌ formData:', JSON.stringify(formData, null, 2));
-                console.error('❌ suggestionForms[0]:', JSON.stringify(suggestionForms[0], null, 2));
                 throw new Error('Nenhuma imagem encontrada para processar');
             }
-            
-            // CORREÇÃO: Detectar rota baseado nos dados disponíveis e validação robusta
-            console.log('🔍 DEBUG - INÍCIO DETECÇÃO DE ROTA');
-            console.log('🔍 DEBUG - currentForm:', JSON.stringify(currentForm, null, 2));
-            console.log('🔍 DEBUG - suggestionForms[0]:', JSON.stringify(suggestionForms[0], null, 2));
-            console.log('🔍 DEBUG - window.location.pathname:', window.location.pathname);
-            console.log('🔍 DEBUG - window.location.hash:', window.location.hash);
-            
+
             // Para rota 3 (suggestionfeed), usar tabela "Image suggestions" com um único registro
             // Para outras rotas, usar tabela "Images" com registros individuais
             let imagesArray;
             let targetTable;
-            
+
             // DETECÇÃO MAIS ROBUSTA DAS ROTAS
-            
+
             // Detectar se é ROTA 1: Baseado no openedFrom dos forms sendo 'suggestions-feed'
-            const hasOpenedFromSuggestionsFeed = (suggestionForms[0]?.openedFrom === 'suggestions-feed') || 
-                                               (currentForm?.openedFrom === 'suggestions-feed');
-            
+            const hasOpenedFromSuggestionsFeed = (suggestionForms[0]?.openedFrom === 'suggestions-feed') ||
+                (currentForm?.openedFrom === 'suggestions-feed');
+
             // Detectar se é ROTA 3: Baseado na URL contendo 'suggestionfeed' E não sendo ROTA 1
             const isUrlSuggestionFeed = window.location.pathname.includes('suggestionfeed') ||
-                                       window.location.hash.includes('suggestionfeed');
-            
+                window.location.hash.includes('suggestionfeed');
+
             // ROTA 3 tem prioridade: se a URL tem suggestionfeed E não é ROTA 1, então é ROTA 3
             const isRoute3 = isUrlSuggestionFeed && !hasOpenedFromSuggestionsFeed;
             const isRoute1 = hasOpenedFromSuggestionsFeed && !isRoute3;
-            
-            console.log('🔍 DEBUG - hasOpenedFromSuggestionsFeed:', hasOpenedFromSuggestionsFeed);
-            console.log('🔍 DEBUG - isUrlSuggestionFeed:', isUrlSuggestionFeed);
-            console.log('🔍 DEBUG - isRoute1 (imobproperty → suggestions-feed):', isRoute1);
-            console.log('🔍 DEBUG - isRoute3 (suggestionfeed direto):', isRoute3);
-            
+
             // Validar se temos dados essenciais antes de prosseguir
             if (!currentForm?.inputImages || !Array.isArray(currentForm.inputImages) || currentForm.inputImages.length === 0) {
-                console.error('❌ ERRO: currentForm.inputImages não encontrado ou vazio');
                 throw new Error('Nenhuma imagem encontrada para processar. Verifique se as imagens foram selecionadas corretamente.');
             }
-            
-            console.log('🔍 DEBUG - currentForm.inputImages válido:', currentForm.inputImages.length, 'imagens');
-            
+
             // FORÇAR ROTA 3 SE URL CONTÉM SUGGESTIONFEED (correção para garantir detecção)
             const forceRoute3 = window.location.href.includes('suggestionfeed');
             const finalIsRoute3 = isRoute3 || forceRoute3;
             const finalIsRoute1 = isRoute1 && !forceRoute3;
-            
-            console.log('🔍 DEBUG - ROTAS FINAIS:');
-            console.log('🔍 DEBUG - finalIsRoute1:', finalIsRoute1);
-            console.log('🔍 DEBUG - finalIsRoute3:', finalIsRoute3);
-            
+
             if (finalIsRoute1) {
-                // ROTA 1: imobproperty -> feed de sugestões - Tabela "Images" com registros individuais
-                console.log('🔍 DEBUG - CONFIGURANDO ROTA 1: FEED DE SUGESTÕES → IMAGES (registros individuais)');
-                targetTable = "Images";
-                imagesArray = currentForm.inputImages.map((imageUrl, index) => {
-                    console.log(`🔍 DEBUG - Criando registro ${index + 1} para imagem:`, imageUrl);
-                    return {
-                        imgUrl: imageUrl,
-                        imgUrls: [imageUrl],
-                        "INPUT IMAGES": [imageUrl],
-                        tipo: currentForm.tipo || '',
-                        retirar: currentForm.retirar || 'Não',
-                        codigo: currentForm.codigo || '',
+                // ROTA 1: imobproperty -> feed de sugestões - USAR NOVA ROTA ESPECÍFICA
+
+                // Usar nova função específica para transferir sugestões aprovadas
+                try {
+                    const suggestionData = {
+                        inputImages: currentForm.inputImages, // Array de todas as imagens
                         propertyUrl: currentForm.propertyUrl || '',
+                        codigo: currentForm.codigo || '',
                         observacoes: currentForm.observacoes || '',
-                        estilo: currentForm.estilo || '',
+                        retirar: currentForm.retirar || 'Não',
+                        tipo: currentForm.tipo || '',
                         acabamento: currentForm.acabamento || 'Não',
-                        imagensReferencia: currentForm.imagensReferencia || [],
-                        modeloVideo: currentForm.modeloVideo || '',
-                        formatoVideo: currentForm.formatoVideo || '',
-                        imgWorkflow: currentForm.imgWorkflow || 'SmartStage',
-                        message: currentForm.message || '',
-                        client: clientInfos?.Email || '',
-                        status: 'Pending'
+                        estilo: currentForm.estilo || '',
+                        imgWorkflow: currentForm.imgWorkflow || 'SmartStage'
                     };
-                });
+                    const transferResults = await apiCall("/api/transfer-approved-suggestion", {
+
+                        method: "POST",
+                        body: JSON.stringify({
+                            suggestionData: suggestionData,
+                            customEmail: clientInfos?.Email || '',
+                            customClientId: clientInfos?.ClientId || '',
+                            customInvoiceId: clientInfos?.InvoiceId || '',
+                            customUserId: clientInfos?.UserId || ''
+                        })
+                    });
+
+                    setSavingSuggestion(false);
+
+                    if (transferResults && transferResults.success) {
+                        // APÓS o sucesso do processamento, atualizar o status das sugestões via nova rota
+                        try {
+                            await updateSuggestionStatus(currentForm.originalSuggestionIds);
+                        } catch (statusError) {
+                            // Não interromper o fluxo - o processamento foi bem-sucedido
+                        }
+
+                        // Mostrar confetti
+                        setShowSuggestionConfetti(true);
+                        setTimeout(() => {
+                            setShowSuggestionConfetti(false);
+                            closeSuggestionForm();
+                        }, 4000);
+                    } else {
+                        alert('Erro ao transferir sugestão. Tente novamente.');
+                    }
+
+                    return; // Sair da função aqui para não executar o código antigo
+
+                } catch (transferError) {
+                    setSavingSuggestion(false);
+                    alert('Erro ao transferir sugestão: ' + transferError.message);
+                    return;
+                }
             } else if (finalIsRoute3) {
                 // ROTA 3: suggestionfeed - Tabela "Image suggestions" com um único registro
-                console.log('🔍 DEBUG - CONFIGURANDO ROTA 3: SUGGESTIONFEED → IMAGE SUGGESTIONS (registro único)');
                 targetTable = "Image suggestions";
                 const propertyFields = selectedSuggestion?.fields || {};
-                console.log('🔍 DEBUG - propertyFields:', JSON.stringify(propertyFields, null, 2));
-                
+
                 imagesArray = [{
                     imgUrls: currentForm.inputImages, // Array de todas as imagens
                     imgUrl: currentForm.inputImages[0], // Primeira imagem para compatibilidade
@@ -727,14 +710,6 @@ const ImobProperty = ({ softrEmail }) => {
                     client: clientInfos?.Email || '',
                     status: 'Pending'
                 }];
-                
-                // DEBUG CRÍTICO: Verificar o que está sendo enviado para INPUT IMAGES
-                console.log('🔍 DEBUG CRÍTICO - ROTA 3 INPUT IMAGES:');
-                console.log('🔍 currentForm.inputImages:', JSON.stringify(currentForm.inputImages, null, 2));
-                console.log('🔍 currentForm.inputImages.length:', currentForm.inputImages?.length);
-                console.log('🔍 Tipo de currentForm.inputImages:', Array.isArray(currentForm.inputImages) ? 'Array' : typeof currentForm.inputImages);
-                console.log('🔍 imagesArray[0]["INPUT IMAGES"]:', JSON.stringify(imagesArray[0]["INPUT IMAGES"], null, 2));
-                console.log('🔍 Length do campo "INPUT IMAGES":', imagesArray[0]["INPUT IMAGES"]?.length);
             } else {
                 // Fallback para outras situações
                 targetTable = "Images";
@@ -759,21 +734,9 @@ const ImobProperty = ({ softrEmail }) => {
                 }));
             }
 
-            console.log('🔍 DEBUG - ROTA DETECTADA:', isRoute1 ? 'ROTA 1' : isRoute3 ? 'ROTA 3' : 'OUTRA');
-            console.log('🔍 DEBUG - TABELA SELECIONADA:', targetTable);
-            console.log('🔍 DEBUG - imagesArray enviado:', JSON.stringify(imagesArray, null, 2));
-
             // Validar se temos dados essenciais antes de enviar
             if (!imagesArray || imagesArray.length === 0) {
                 throw new Error('Nenhuma imagem encontrada para processar');
-            }
-            
-            if (!clientInfos?.Email) {
-                console.warn('⚠️ Email do cliente não encontrado');
-            }
-            
-            if (!clientInfos?.ClientId) {
-                console.warn('⚠️ ClientId não encontrado');
             }
 
             // Objeto para envio ao backend - usar tabela específica baseada na rota
@@ -786,82 +749,36 @@ const ImobProperty = ({ softrEmail }) => {
                 table: targetTable // CRÍTICO: Usar tabela correta baseada na rota detectada
             };
 
-            console.log('🔍 DEBUG - requestData enviado:', JSON.stringify(requestData, null, 2));
-            console.log('🔍 DEBUG - TABLE ENVIADA:', requestData.table);
-            console.log('🔍 DEBUG - EXPECTATIVA ROTA 1:', finalIsRoute1 ? `Criar ${imagesArray.length} registros individuais na tabela Images` : 'N/A');
-            console.log('🔍 DEBUG - EXPECTATIVA ROTA 3:', finalIsRoute3 ? 'Criar 1 registro com todas as imagens na tabela Image suggestions' : 'N/A');
-
             // Usar o mesmo endpoint que funciona no ImageSelector
-            console.log('🚀 Enviando dados para API...');
-            
             let data;
             try {
-                console.log('🔄 DEBUG - Iniciando chamada da API com payload:', JSON.stringify(requestData, null, 2));
                 data = await apiCall("/api/update-images-airtable", {
                     method: "POST",
                     body: JSON.stringify(requestData)
                 });
-                console.log('✅ Resposta da API recebida:', data);
             } catch (apiError) {
-                console.error('❌ Erro na chamada da API:', apiError);
-                console.error('📊 Dados que causaram o erro:', JSON.stringify(requestData, null, 2));
-                
-                // Log detalhado do erro
-                console.error('❌ DEBUG - ERRO DETALHADO DA API:');
-                console.error('❌ DEBUG - Error object:', apiError);
-                console.error('❌ DEBUG - Error message:', apiError.message);
-                console.error('❌ DEBUG - Error stack:', apiError.stack);
-                
-                // Extrair mais informações se disponível
-                if (apiError.response) {
-                    console.error('❌ DEBUG - Response status:', apiError.response.status);
-                    console.error('❌ DEBUG - Response statusText:', apiError.response.statusText);
-                    console.error('❌ DEBUG - Response data:', apiError.response.data);
-                    console.error('❌ DEBUG - Response headers:', apiError.response.headers);
-                } else if (apiError.request) {
-                    console.error('❌ DEBUG - Request feito mas sem resposta:', apiError.request);
-                } else {
-                    console.error('❌ DEBUG - Erro na configuração da requisição:', apiError.message);
-                }
-                
-                // Validar estrutura dos dados enviados
-                console.log('🔍 DEBUG - VALIDANDO ESTRUTURA DOS DADOS:');
-                console.log('🔍 DEBUG - imagesArray é array?', Array.isArray(requestData.imagesArray));
-                console.log('🔍 DEBUG - imagesArray length:', requestData.imagesArray?.length);
-                console.log('🔍 DEBUG - table está definida?', !!requestData.table);
-                console.log('🔍 DEBUG - email está definido?', !!requestData.email);
-                
                 // Tentar identificar o tipo de erro e dar feedback específico
                 if (apiError.message.includes('500')) {
-                    console.error('🔴 Erro 500 - Erro interno do servidor. Verificar logs do backend.');
-                    console.error('🔴 Possíveis causas: problema na conexão com Airtable, estrutura de dados incorreta, ou limite de API excedido.');
                     throw new Error('Erro interno do servidor (500). Verifique: 1) Se a tabela "' + requestData.table + '" existe no Airtable, 2) Se os campos estão corretos, 3) Se não há limite de API excedido. Tente novamente em alguns minutos.');
                 } else if (apiError.message.includes('400')) {
-                    console.error('🔴 Erro 400 - Dados inválidos enviados para a API.');
                     throw new Error('Dados inválidos. Verifique se todos os campos obrigatórios foram preenchidos corretamente.');
                 } else if (apiError.message.includes('network') || apiError.message.includes('timeout')) {
-                    console.error('🔴 Erro de rede ou timeout.');
                     throw new Error('Problema de conexão. Verifique sua internet e tente novamente.');
                 } else {
                     throw new Error('Erro ao comunicar com o servidor: ' + (apiError.message || 'Erro desconhecido'));
                 }
             }
 
-            console.log('🔍 DEBUG - RESPOSTA DO BACKEND:', data);
-            console.log('🔍 DEBUG - Se houve registros extras criados, o problema está no BACKEND na função upsetImagesInAirtable');
-
             setSavingSuggestion(false); // Parar loader
-            
+
             if (data) {
                 // APÓS o sucesso do processamento, atualizar o status das sugestões via nova rota
                 try {
                     await updateSuggestionStatus(currentForm.originalSuggestionIds);
-                    console.log('✅ Status das sugestões atualizado com sucesso via rota dedicada');
                 } catch (statusError) {
-                    console.error('❌ Erro ao atualizar status das sugestões via rota dedicada:', statusError);
                     // Não interromper o fluxo - o processamento foi bem-sucedido
                 }
-                
+
                 // Mostrar confetti igual ao ImageSelector
                 setShowSuggestionConfetti(true);
                 setTimeout(() => {
@@ -873,13 +790,9 @@ const ImobProperty = ({ softrEmail }) => {
             }
         } catch (error) {
             setSavingSuggestion(false); // Parar loader em caso de erro
-            console.error('Erro ao enviar formulário:', error);
             alert('Erro ao enviar formulário: ' + error.message);
         }
     };
-
-    useEffect(() => {
-    }, [suggestionRecords])
 
     useEffect(() => {
         document.title = "Portal de Imóveis - " + clientName;
@@ -908,41 +821,91 @@ const ImobProperty = ({ softrEmail }) => {
             <div className='mt-3'>
                 <h3 className={`${styles.title_font}`}>{`Portal de Imóveis - ${clientName}`}</h3>
                 <p className={`${styles.paragraph_font}`}>{showImageSelector ? "Selecione as imagens que você quer aplicar Virtual Staging." : topMessage}</p>
-                
+
                 {!showImageSelector && (
                     <>
                         {/* Div de Sugestões com scroll horizontal */}
                         {suggestionRecords.length > 0 && (
-                    <div className={styles.suggestionsSection}>
-                        <h5 className={styles.suggestionsTitle}>
-                            Imóveis com potencial de valorização 🤩 ({suggestionRecords.length} {suggestionRecords.length === 1 ? 'imóvel' : 'imóveis'})
-                        </h5>
-                        <div className={styles.suggestionsScrollContainer}>
-                            {suggestionRecords.map((property, index) => (
-                                <div
-                                    key={`${property.propertyCode}-${index}`}
-                                    className={styles.suggestionCard}
-                                    onClick={() => selectSuggestion(property)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    {/* Carrossel de imagens */}
-                                    <div className={styles.carouselContainer}>
-                                        {property.images.length > 1 ? (
-                                            // Carrossel para múltiplas imagens
-                                            <div id={`suggestion-carousel-${index}`} className="carousel slide" data-bs-ride="carousel">
-                                                <div className="carousel-inner">
-                                                    {property.images.map((image, imgIndex) => (
-                                                        <div
-                                                            key={`${image.suggestionId}-${imgIndex}`}
-                                                            className={`carousel-item ${imgIndex === 0 ? 'active' : ''}`}
-                                                            style={{ position: 'relative' }}
-                                                        >
-                                                            <img 
-                                                                src={image.url} 
-                                                                alt={`${property.propertyCode} - Imagem ${imgIndex + 1}`}
+                            <div className={styles.suggestionsSection}>
+                                <h5 className={styles.suggestionsTitle}>
+                                    Imóveis com potencial de valorização 🤩 ({suggestionRecords.length} {suggestionRecords.length === 1 ? 'imóvel' : 'imóveis'})
+                                </h5>
+                                <div className={styles.suggestionsScrollContainer}>
+                                    {suggestionRecords.map((property, index) => (
+                                        <div
+                                            key={`${property.propertyCode}-${index}`}
+                                            className={styles.suggestionCard}
+                                            onClick={() => selectSuggestion(property)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            {/* Carrossel de imagens */}
+                                            <div className={styles.carouselContainer}>
+                                                {property.images.length > 1 ? (
+                                                    // Carrossel para múltiplas imagens
+                                                    <div id={`suggestion-carousel-${index}`} className="carousel slide" data-bs-ride="carousel">
+                                                        <div className="carousel-inner">
+                                                            {property.images.map((image, imgIndex) => (
+                                                                <div
+                                                                    key={`${image.suggestionId}-${imgIndex}`}
+                                                                    className={`carousel-item ${imgIndex === 0 ? 'active' : ''}`}
+                                                                    style={{ position: 'relative' }}
+                                                                >
+                                                                    <img
+                                                                        src={image.url}
+                                                                        alt={`${property.propertyCode} - Imagem ${imgIndex + 1}`}
+                                                                        className={styles.suggestionImage}
+                                                                    />
+                                                                    {/* Badges de Destaques */}
+                                                                    {property.destaques && property.destaques.length > 0 && (
+                                                                        <div className={styles.badgesContainer}>
+                                                                            {property.destaques.slice(0, 3).map((destaque, badgeIndex) => (
+                                                                                <span
+                                                                                    key={badgeIndex}
+                                                                                    className={styles.destaqueBadge}
+                                                                                    title={destaque} // Tooltip com texto completo
+                                                                                >
+                                                                                    {abbreviateText(destaque)}
+                                                                                </span>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {/* Controles do carrossel */}
+                                                        <button className="carousel-control-prev" type="button" data-bs-target={`#suggestion-carousel-${index}`} data-bs-slide="prev" onClick={(e) => e.stopPropagation()}>
+                                                            <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                            <span className="visually-hidden">Anterior</span>
+                                                        </button>
+                                                        <button className="carousel-control-next" type="button" data-bs-target={`#suggestion-carousel-${index}`} data-bs-slide="next" onClick={(e) => e.stopPropagation()}>
+                                                            <span className="carousel-control-next-icon" aria-hidden="true"></span>
+                                                            <span className="visually-hidden">Próxima</span>
+                                                        </button>
+                                                        {/* Indicadores */}
+                                                        <div className="carousel-indicators">
+                                                            {property.images.map((_, imgIndex) => (
+                                                                <button
+                                                                    key={imgIndex}
+                                                                    type="button"
+                                                                    data-bs-target={`#suggestion-carousel-${index}`}
+                                                                    data-bs-slide-to={imgIndex}
+                                                                    className={imgIndex === 0 ? 'active' : ''}
+                                                                    aria-label={`Slide ${imgIndex + 1}`}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                ></button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    // Imagem única
+                                                    property.images.length > 0 && (
+                                                        <div style={{ position: 'relative' }}>
+                                                            <img
+                                                                src={property.images[0].url}
+                                                                alt={property.propertyCode}
                                                                 className={styles.suggestionImage}
                                                             />
-                                                            {/* Badges de Destaques */}
+                                                            {/* Badges de Destaques para imagem única */}
                                                             {property.destaques && property.destaques.length > 0 && (
                                                                 <div className={styles.badgesContainer}>
                                                                     {property.destaques.slice(0, 3).map((destaque, badgeIndex) => (
@@ -957,85 +920,35 @@ const ImobProperty = ({ softrEmail }) => {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    ))}
-                                                </div>
-                                                {/* Controles do carrossel */}
-                                                <button className="carousel-control-prev" type="button" data-bs-target={`#suggestion-carousel-${index}`} data-bs-slide="prev" onClick={(e) => e.stopPropagation()}>
-                                                    <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-                                                    <span className="visually-hidden">Anterior</span>
-                                                </button>
-                                                <button className="carousel-control-next" type="button" data-bs-target={`#suggestion-carousel-${index}`} data-bs-slide="next" onClick={(e) => e.stopPropagation()}>
-                                                    <span className="carousel-control-next-icon" aria-hidden="true"></span>
-                                                    <span className="visually-hidden">Próxima</span>
-                                                </button>
-                                                {/* Indicadores */}
-                                                <div className="carousel-indicators">
-                                                    {property.images.map((_, imgIndex) => (
-                                                        <button
-                                                            key={imgIndex}
-                                                            type="button"
-                                                            data-bs-target={`#suggestion-carousel-${index}`}
-                                                            data-bs-slide-to={imgIndex}
-                                                            className={imgIndex === 0 ? 'active' : ''}
-                                                            aria-label={`Slide ${imgIndex + 1}`}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        ></button>
-                                                    ))}
-                                                </div>
+                                                    )
+                                                )}
                                             </div>
-                                        ) : (
-                                            // Imagem única
-                                            property.images.length > 0 && (
-                                                <div style={{ position: 'relative' }}>
-                                                    <img 
-                                                        src={property.images[0].url} 
-                                                        alt={property.propertyCode}
-                                                        className={styles.suggestionImage}
-                                                    />
-                                                    {/* Badges de Destaques para imagem única */}
-                                                    {property.destaques && property.destaques.length > 0 && (
-                                                        <div className={styles.badgesContainer}>
-                                                            {property.destaques.slice(0, 3).map((destaque, badgeIndex) => (
-                                                                <span
-                                                                    key={badgeIndex}
-                                                                    className={styles.destaqueBadge}
-                                                                    title={destaque} // Tooltip com texto completo
-                                                                >
-                                                                    {abbreviateText(destaque)}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
+
+                                            {/* Conteúdo do card */}
+                                            <div className={styles.suggestionContent}>
+                                                <div className={styles.suggestionCode}>
+                                                    {property.propertyCode}
                                                 </div>
-                                            )
-                                        )}
-                                    </div>
-                                    
-                                    {/* Conteúdo do card */}
-                                    <div className={styles.suggestionContent}>
-                                        <div className={styles.suggestionCode}>
-                                            {property.propertyCode}
+                                                <div className={styles.suggestionAddress}>
+                                                    {property.address}
+                                                </div>
+                                                {property.price && (
+                                                    <div className={styles.suggestionPrice}>
+                                                        R$ {property.price.toLocaleString('pt-BR')}
+                                                    </div>
+                                                )}
+                                                {/* Badge com número de imagens */}
+                                                {property.images.length > 1 && (
+                                                    <div className={styles.imageCount}>
+                                                        {property.images.length} fotos
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className={styles.suggestionAddress}>
-                                            {property.address}
-                                        </div>
-                                        {property.price && (
-                                            <div className={styles.suggestionPrice}>
-                                                R$ {property.price.toLocaleString('pt-BR')}
-                                            </div>
-                                        )}
-                                        {/* Badge com número de imagens */}
-                                        {property.images.length > 1 && (
-                                            <div className={styles.imageCount}>
-                                                {property.images.length} fotos
-                                            </div>
-                                        )}
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                            </div>
+                        )}
 
                         <div>
                             {showPropertysList && (
@@ -1054,7 +967,7 @@ const ImobProperty = ({ softrEmail }) => {
                         </div>
                     </>
                 )}
-                
+
                 {showImageSelector && (
                     <ImageSelector
                         property={selectedProperty}
@@ -1068,50 +981,50 @@ const ImobProperty = ({ softrEmail }) => {
                 )}
 
                 {showSuggestionForm && suggestionForms.length > 0 && selectedSuggestion && (
-                        <CustomModal show={showSuggestionForm} onClose={closeSuggestionForm}>
-                            {selectedSuggestion.fields.IsAtelier ? (
-                                <AtelierForm
-                                    currentForm={suggestionForms[suggestionFormIndex]}
-                                    formIndex={suggestionFormIndex}
-                                    forms={suggestionForms}
-                                    currentImageIndex={currentImageIndex} // Para controle da imagem exibida
-                                    handleFormChange={handleSuggestionFormChange}
-                                    handlePrev={handleSuggestionPrev}
-                                    handleNext={handleSuggestionNext}
-                                    handleSubmit={handleSuggestionSubmit}
-                                    selectedIndexes={suggestionForms.map((_, idx) => idx)}
-                                    property={selectedSuggestion}
-                                    onNavigateToImage={handleSuggestionNavigateToImage}
-                                    onRemoveImage={handleSuggestionRemoveImage}
-                                    onOriginalClose={closeSuggestionForm}
-                                    table={"Images"}
-                                    openedFrom={'suggestions-feed'}
-                                    estilosamb={estilosamb}
-                                />
-                            ) : (
-                                <SmartStageForm
-                                    currentForm={suggestionForms[suggestionFormIndex]}
-                                    formIndex={suggestionFormIndex}
-                                    forms={suggestionForms}
-                                    currentImageIndex={currentImageIndex} // Para controle da imagem exibida
-                                    handleFormChange={handleSuggestionFormChange}
-                                    handlePrev={handleSuggestionPrev}
-                                    handleNext={handleSuggestionNext}
-                                    handleSubmit={handleSuggestionSubmit}
-                                    selectedIndexes={suggestionForms.map((_, idx) => idx)}
-                                    property={selectedSuggestion}
-                                    onNavigateToImage={handleSuggestionNavigateToImage}
-                                    onRemoveImage={handleSuggestionRemoveImage}
-                                    onOriginalClose={closeSuggestionForm}
-                                    table={window.location.href.includes('suggestionfeed') ? "Image suggestions" : "Images"}
-                                    openedFrom={window.location.href.includes('suggestionfeed') ? undefined : 'suggestions-feed'}
-                                />
-                            )}
-                        </CustomModal>
+                    <CustomModal show={showSuggestionForm} onClose={closeSuggestionForm}>
+                        {selectedSuggestion.fields.IsAtelier ? (
+                            <AtelierForm
+                                currentForm={suggestionForms[suggestionFormIndex]}
+                                formIndex={suggestionFormIndex}
+                                forms={suggestionForms}
+                                currentImageIndex={currentImageIndex} // Para controle da imagem exibida
+                                handleFormChange={handleSuggestionFormChange}
+                                handlePrev={handleSuggestionPrev}
+                                handleNext={handleSuggestionNext}
+                                handleSubmit={handleSuggestionSubmit}
+                                selectedIndexes={suggestionForms.map((_, idx) => idx)}
+                                property={selectedSuggestion}
+                                onNavigateToImage={handleSuggestionNavigateToImage}
+                                onRemoveImage={handleSuggestionRemoveImage}
+                                onOriginalClose={closeSuggestionForm}
+                                table={"Images"}
+                                openedFrom={'suggestions-feed'}
+                                estilosamb={estilosamb}
+                            />
+                        ) : (
+                            <SmartStageForm
+                                currentForm={suggestionForms[suggestionFormIndex]}
+                                formIndex={suggestionFormIndex}
+                                forms={suggestionForms}
+                                currentImageIndex={currentImageIndex} // Para controle da imagem exibida
+                                handleFormChange={handleSuggestionFormChange}
+                                handlePrev={handleSuggestionPrev}
+                                handleNext={handleSuggestionNext}
+                                handleSubmit={handleSuggestionSubmit}
+                                selectedIndexes={suggestionForms.map((_, idx) => idx)}
+                                property={selectedSuggestion}
+                                onNavigateToImage={handleSuggestionNavigateToImage}
+                                onRemoveImage={handleSuggestionRemoveImage}
+                                onOriginalClose={closeSuggestionForm}
+                                table={window.location.href.includes('suggestionfeed') ? "Image suggestions" : "Images"}
+                                openedFrom={window.location.href.includes('suggestionfeed') ? undefined : 'suggestions-feed'}
+                            />
+                        )}
+                    </CustomModal>
                 )}
 
             </div>
-            
+
             {/* Confetti para Feed de Sugestões */}
             {showSuggestionConfetti && (
                 <Overlay>
@@ -1138,7 +1051,7 @@ const ImobProperty = ({ softrEmail }) => {
                     </>
                 </Overlay>
             )}
-            
+
             {/* Loader para Feed de Sugestões */}
             {savingSuggestion && (
                 <Overlay>
@@ -1180,7 +1093,7 @@ const ImobProperty = ({ softrEmail }) => {
                     </div>
                 </Overlay>
             )}
-            
+
         </div>
     );
 }

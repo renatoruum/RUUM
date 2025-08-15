@@ -151,7 +151,6 @@ const ImageSelector = ({
       if (onNavigateToImage) {
         onNavigateToImage(targetIndex);
       } else {
-        console.log("ImageSelector handleNavigateToImage for suggestion feed:", targetIndex);
         // Fallback: não fazemos nada aqui, o controle está no componente pai
       }
     } else {
@@ -437,7 +436,6 @@ const ImageSelector = ({
         })
         .catch(err => {
           setSaving(false);
-          console.error(err);
           alert('Erro ao enviar formulários. Tente novamente.');
         });
     };

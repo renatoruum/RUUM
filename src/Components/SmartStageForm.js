@@ -7,7 +7,6 @@ import DialogBox from './DialogBox';
 import styles from './ImageSelector.module.css';
 
 // 🔴🔴🔴 ARQUIVO CORRETO SENDO CARREGADO! 🔴🔴🔴
-console.log('🔴🔴🔴 SMARTSTAGEFORM - ARQUIVO CORRETO CARREGADO EM:', new Date().toLocaleTimeString());
 
 const SmartStageForm = ({
     currentForm,
@@ -34,34 +33,23 @@ const SmartStageForm = ({
     // Para SuggestionFeed, verificar estrutura de dados
     const isSuggestionFeed = openedFrom === 'suggestions-feed';
 
-    // DEBUG: Logs das props recebidas - VERSÃO 2025
-    console.log('� SMARTSTAGEFORM NOVA VERSÃO - Props recebidas:');
-    console.log('� table:', table);
-    console.log('� openedFrom:', openedFrom);
-    console.log('� isSuggestionFeed:', isSuggestionFeed);
-    console.log('� handleSubmit type:', typeof handleSubmit);
-
     // LÓGICA ROBUSTA PARA DETECTAR ESTRUTURA DE DADOS
     let displayImages = [];
     let mainDisplayImage = null;
     
     if (table === "Image suggestions") {
         // ROTA 3: SUGGESTIONFEED - Usar currentForm.imgUrls (não inputImages!)
-        console.log('🔍 ROTA 3 - Detectando imagens em currentForm.imgUrls:', currentForm?.imgUrls?.length);
         if (currentForm?.imgUrls && Array.isArray(currentForm.imgUrls)) {
             displayImages = currentForm.imgUrls;
             mainDisplayImage = currentForm.imgUrls[currentImageIndex || 0];
-            console.log('🔍 ROTA 3 - Usando currentForm.imgUrls:', displayImages.length, 'imagens');
         } else if (currentForm?.inputImages && Array.isArray(currentForm.inputImages)) {
             // Fallback para inputImages se imgUrls não existir
             displayImages = currentForm.inputImages;
             mainDisplayImage = currentForm.inputImages[currentImageIndex || 0];
-            console.log('🔍 ROTA 3 - Fallback para currentForm.inputImages:', displayImages.length, 'imagens');
         } else if (forms && forms.length > 0 && forms[0]?.imgUrls) {
             // Fallback: usar forms[0].imgUrls
             displayImages = forms[0].imgUrls;
             mainDisplayImage = forms[0].imgUrls[currentImageIndex || 0];
-            console.log('🔍 ROTA 3 - Fallback para forms[0].imgUrls:', displayImages.length, 'imagens');
         } else {
             displayImages = [];
             mainDisplayImage = null;

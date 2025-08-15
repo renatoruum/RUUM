@@ -134,7 +134,6 @@ const VideoTour = () => {
 
             return await response.json();
         } catch (error) {
-            console.error('Erro na chamada da API:', error);
             throw error;
         }
     };
@@ -244,7 +243,6 @@ const VideoTour = () => {
             }));
 
         } catch (error) {
-            console.error('Erro ao gerar script:', error);
             alert('Erro ao gerar script: ' + error.message);
         } finally {
             setScriptLoading(false);
@@ -321,16 +319,6 @@ const VideoTour = () => {
             }
 
         } catch (error) {
-            console.error('❌ Erro no TTS:', error);
-            console.error('Script enviado:', generatedScript);
-            console.error('Voz selecionada:', selectedVoice);
-            console.error('Erro completo:', {
-                message: error.message,
-                status: error.status,
-                details: error.details,
-                timestamp: new Date().toISOString()
-            });
-            
             if (error.message.includes('401') || error.message.includes('autenticação')) {
                 alert('🔐 Erro de autenticação com ElevenLabs.\nO token no backend pode estar inválido ou expirado.\nVerifique a configuração no servidor.');
             } else if (error.message.includes('500')) {
@@ -373,8 +361,6 @@ const VideoTour = () => {
             if (contentType && contentType.includes('application/json')) {
                 // Resposta JSON com URL
                 const jsonResponse = await audioResponse.json();
-                console.log('✅ Teste TTS bem-sucedido! (JSON)');
-                console.log('Resposta do áudio:', jsonResponse);
                 
                 const publicAudioUrl = jsonResponse.url || jsonResponse.data?.url || jsonResponse.audioUrl;
                 
@@ -383,27 +369,15 @@ const VideoTour = () => {
                 }
                 
                 setAudioUrl(publicAudioUrl);
-                console.log('Áudio de teste gerado - URL pública:', publicAudioUrl);
             } else {
                 // Resposta é um arquivo de áudio - criar blob URL
                 const audioBlob = await audioResponse.blob();
-                console.log('✅ Teste TTS bem-sucedido! (Blob)');
-                console.log('Tamanho do áudio:', audioBlob.size, 'bytes');
                 
                 const audioBlobUrl = URL.createObjectURL(audioBlob);
                 setAudioUrl(audioBlobUrl);
-                console.log('Áudio de teste gerado - Blob URL:', audioBlobUrl);
             }
 
         } catch (error) {
-            console.error('❌ Erro no teste TTS:', error);
-            console.error('Erro completo:', {
-                message: error.message,
-                status: error.status,
-                details: error.details,
-                timestamp: new Date().toISOString()
-            });
-            
             if (error.message.includes('401') || error.message.includes('autenticação')) {
                 alert('🔐 Erro de autenticação no teste TTS.\nO token no backend pode estar inválido ou expirado.');
             } else if (error.message.includes('500')) {
@@ -433,10 +407,7 @@ const VideoTour = () => {
             });
 
             setGeneratedVideo(response.data || response);
-            console.log('✅ Vídeo gerado:', response.data || response);
-
         } catch (error) {
-            console.error('❌ Erro ao gerar vídeo:', error);
             alert('❌ Erro ao gerar vídeo: ' + error.message);
         } finally {
             setRunwayLoading(false);
@@ -459,18 +430,11 @@ const VideoTour = () => {
         setCombinedVideo(null);
 
         try {
-            console.log('=== COMBINAÇÃO SHOTSTACK OTIMIZADA ===');
-            console.log('🎬 URL do vídeo:', generatedVideo.output[0]);
-            console.log('🎵 URL do áudio:', audioUrl);
-            console.log('⏱️ Duração:', runwayForm.duration, 'segundos');
-            
             // Usar a função otimizada do ShotstackFix
             const result = await handleShotstackIntegration(
                 generatedVideo.output[0], // URL do vídeo
                 audioUrl // URL pública do áudio (diretamente do ElevenLabs)
             );
-
-            console.log('✅ Combinação bem-sucedida:', result);
             
             // Atualizar estado com o resultado
             setCombinedVideo({
@@ -483,8 +447,6 @@ const VideoTour = () => {
             alert('✅ Vídeo combinado com áudio criado com sucesso!');
 
         } catch (error) {
-            console.error('❌ Erro na combinação Shotstack:', error);
-            
             let errorMessage = 'Erro na combinação: ';
             if (error.message.includes('404')) {
                 errorMessage += 'Endpoint não encontrado. Verifique se o backend está rodando.';
@@ -518,18 +480,11 @@ const VideoTour = () => {
         setCombinedVideo(null);
 
         try {
-            console.log('=== COMBINAÇÃO OTIMIZADA VÍDEO + ÁUDIO ===');
-            console.log('🎬 URL do vídeo:', generatedVideo.output[0]);
-            console.log('🎵 URL do áudio:', audioUrl);
-            console.log('⏱️ Duração:', runwayForm.duration, 'segundos');
-            
             // Usar a função otimizada do ShotstackFix
             const result = await handleShotstackIntegration(
                 generatedVideo.output[0], // URL do vídeo
                 audioUrl // URL pública do áudio (diretamente do ElevenLabs)
             );
-
-            console.log('✅ Combinação bem-sucedida:', result);
             
             // Atualizar estado com o resultado
             setCombinedVideo({
@@ -541,7 +496,6 @@ const VideoTour = () => {
             alert('✅ Vídeo combinado com áudio criado com sucesso!');
 
         } catch (error) {
-            console.error('❌ Erro na combinação:', error);
             alert('❌ Erro ao combinar vídeo com áudio: ' + error.message);
         } finally {
             setCombineLoading(false);

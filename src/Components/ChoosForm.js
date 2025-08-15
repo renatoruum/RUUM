@@ -171,7 +171,7 @@ const ChoosForm = forwardRef((props, ref) => {
             if (videoRef.current) {
                 if (hoveredModel === 'magicmotion' || selectedModel === 'magicmotion' ||
                     hoveredModel === 'videotour' || selectedModel === 'videotour') {
-                    videoRef.current.play().catch(e => console.log("Auto-play prevented:", e));
+                    videoRef.current.play().catch(e => {});
                 } else {
                     videoRef.current.pause();
                     videoRef.current.currentTime = 0;
@@ -211,7 +211,6 @@ const ChoosForm = forwardRef((props, ref) => {
         // Adicionar funcionalidades para thumbnails
         onNavigateToImage: props.onNavigateToImage || ((targetIndex) => {
             // Fallback para navegação sequencial se a função direta não estiver disponível
-            console.log('ChoosForm fallback navigation to index:', targetIndex);
             const difference = targetIndex - props.formIndex;
             if (difference > 0) {
                 // Navegar para frente
@@ -262,7 +261,7 @@ const ChoosForm = forwardRef((props, ref) => {
                     setHoveredModel(model.id);
                     // Tenta iniciar o vídeo diretamente se for o card de vídeo
                     if ((model.id === 'magicmotion' || model.id === 'videotour') && videoRef.current) {
-                        videoRef.current.play().catch(e => console.log("Auto-play prevented:", e));
+                        videoRef.current.play().catch(e => {});
                     }
                 }}
                 onMouseLeave={() => {
@@ -277,7 +276,7 @@ const ChoosForm = forwardRef((props, ref) => {
                     setHoveredModel(model.id);
                     // Tenta iniciar o vídeo diretamente se for o card de vídeo em dispositivos touch
                     if ((model.id === 'magicmotion' || model.id === 'videotour') && videoRef.current) {
-                        videoRef.current.play().catch(e => console.log("Auto-play prevented:", e));
+                        videoRef.current.play().catch(e => {});
                     }
                 }}
                 onTouchEnd={() => {
@@ -313,7 +312,7 @@ const ChoosForm = forwardRef((props, ref) => {
                                     // Play ou pause com base no estado de hover
                                     if (el && (model.id === 'magicmotion' || model.id === 'videotour')) {
                                         if (hoveredModel === model.id || selectedModel === model.id) {
-                                            el.play().catch(e => console.log("Auto-play prevented:", e));
+                                            el.play().catch(e => {});
                                         } else {
                                             el.pause();
                                             el.currentTime = 0;

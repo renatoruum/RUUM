@@ -84,7 +84,6 @@ const PropertysList = ({ propertyList, selectProperty, itemsToShow, setItemsToSh
       fields = property.fields;
     } else {
       // Não tem a estrutura esperada
-      console.error('PropertysList - Item com formato inesperado:', property);
       return false;
     }
     

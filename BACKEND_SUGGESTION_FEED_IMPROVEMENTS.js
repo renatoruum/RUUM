@@ -292,3 +292,185 @@ export const updateImagesAirtableHandler = async (req, res) => {
         });
     }
 };
+
+/**
+ * Função específica para transferir sugestões aprovadas do Feed para tabela Images (Rota 3)
+ * Converte 1 registro de Image suggestions (múltiplas imagens) 
+ * em N registros individuais na tabela Images
+ * @param {Object} suggestionData - Dados da sugestão aprovada
+ * @param {string} customEmail - Email do usuário
+ * @param {string} customClientId - ID do cliente
+ * @param {string} customInvoiceId - ID da fatura
+ * @param {string} customUserId - ID do usuário
+ * @returns {Promise<Array>} Array com resultados da operação
+ */
+export async function transferApprovedSuggestionToImages(
+    suggestionData,
+    customEmail,
+    customClientId,
+    customInvoiceId,
+    customUserId
+) {
+    console.log('🔄 ROTA 2 - Iniciando transferência de sugestão aprovada para Images');
+    console.log('🔍 ROTA 2 - Dados recebidos:', JSON.stringify(suggestionData, null, 2));
+    
+    // Usar a mesma estrutura de import do arquivo principal
+    const Airtable = require('airtable');
+    const baseInstance = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE_ID);
+    const results = [];
+    
+    // Extrair URLs das imagens - APENAS do campo inputImages
+    const imageUrls = suggestionData.inputImages || [];
+    
+    if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
+        console.error('❌ ROTA 2 - Nenhuma URL de imagem válida encontrada');
+        return [{ status: 'error', error: 'Nenhuma URL de imagem válida', imgUrl: null }];
+    }
+    
+    console.log(`🔍 ROTA 2 - Processando ${imageUrls.length} imagens individuais para tabela Images`);
+    
+    // Função para validar campos
+    const getSelectValue = (value) => {
+        if (!value) return null;
+        const cleanValue = value.toString().replace(/^"+|"+$/g, '').trim();
+        return cleanValue !== '' ? cleanValue : null;
+    };
+    
+    // Criar UM registro individual para CADA imagem
+    for (let i = 0; i < imageUrls.length; i++) {
+        const imageUrl = imageUrls[i];
+        
+        try {
+            console.log(`🔍 ROTA 2 - Processando imagem ${i + 1}/${imageUrls.length}: ${imageUrl.substring(0, 50)}...`);
+            
+            const fields = {
+                ["Property's URL"]: suggestionData.propertyUrl || '',
+                ["INPUT IMAGE"]: [{ url: imageUrl }], // UMA imagem por registro
+                ["Owner Email"]: customEmail || '',
+                ["Client Internal Code"]: suggestionData.codigo || '',
+                ["Message"]: suggestionData.observacoes || '',
+                ["Processing Source"]: "rota-2-suggestion-approved", // Identificar origem
+                ["Created From"]: "suggestion-feed-approval",
+                ["Approved At"]: new Date().toISOString()
+            };
+            
+            // Relacionamentos
+            if (customClientId) fields.Clients = [customClientId];
+            if (customInvoiceId) fields.Invoices = [customInvoiceId];
+            if (customUserId) fields.Users = [customUserId];
+            
+            // Campos opcionais
+            const decluttering = getSelectValue(suggestionData.retirar);
+            if (decluttering) fields["Decluttering"] = decluttering;
+            
+            const roomType = getSelectValue(suggestionData.tipo);
+            if (roomType) fields["Room Type"] = roomType;
+            
+            const finish = getSelectValue(suggestionData.acabamento);
+            if (finish) fields["Finish"] = finish;
+            
+            const imageWorkflow = getSelectValue(suggestionData.imgWorkflow);
+            if (imageWorkflow) fields["Image Workflow"] = imageWorkflow;
+            
+            // Estilo (se houver)
+            const estilo = getSelectValue(suggestionData.estilo);
+            if (estilo) {
+                try {
+                    const styleRecords = await baseInstance("Styles").select({
+                        filterByFormula: `{Style Name} = '${estilo}'`,
+                        maxRecords: 1
+                    }).firstPage();
+                    
+                    if (styleRecords.length > 0) {
+                        fields["STYLE"] = [styleRecords[0].id];
+                    }
+                } catch (styleError) {
+                    console.error(`❌ ROTA 2 - Erro ao buscar estilo '${estilo}':`, styleError.message);
+                }
+            }
+            
+            console.log(`🔍 ROTA 2 - Campos para registro ${i + 1}:`, JSON.stringify(fields, null, 2));
+            
+            // Criar registro individual na tabela Images
+            const result = await baseInstance("Images").create(fields);
+            
+            console.log(`✅ ROTA 2 - Registro ${i + 1} criado na tabela Images: ${result.id}`);
+            results.push({ 
+                index: i, 
+                status: 'created', 
+                id: result.id, 
+                imgUrl: imageUrl 
+            });
+            
+        } catch (error) {
+            console.error(`❌ ROTA 2 - Erro ao criar registro ${i + 1}:`, error.message);
+            results.push({ 
+                index: i, 
+                status: 'error', 
+                error: error.message, 
+                imgUrl: imageUrl 
+            });
+        }
+    }
+    
+    const successCount = results.filter(r => r.status === 'created').length;
+    const errorCount = results.filter(r => r.status === 'error').length;
+    
+    console.log(`🎯 ROTA 2 - Transferência concluída: ${successCount} sucessos, ${errorCount} erros`);
+    
+    return results;
+}
+
+// NOVO: Handler para endpoint de transferência de sugestões aprovadas
+export const transferApprovedSuggestionHandler = async (req, res) => {
+    try {
+        console.log('🔄 ENDPOINT - Transfer Approved Suggestion iniciado');
+        
+        const { 
+            suggestionData,
+            customEmail,
+            customClientId,
+            customInvoiceId,
+            customUserId
+        } = req.body;
+        
+        // Validar dados obrigatórios
+        if (!suggestionData || !suggestionData.inputImages || !Array.isArray(suggestionData.inputImages)) {
+            return res.status(400).json({
+                success: false,
+                message: 'suggestionData.inputImages é obrigatório e deve ser um array'
+            });
+        }
+        
+        console.log('🔍 ENDPOINT - Transferindo sugestão com:', suggestionData.inputImages.length, 'imagens');
+        
+        const results = await transferApprovedSuggestionToImages(
+            suggestionData,
+            customEmail,
+            customClientId,
+            customInvoiceId,
+            customUserId
+        );
+        
+        const successCount = results.filter(r => r.status === 'created').length;
+        const errorCount = results.filter(r => r.status === 'error').length;
+        
+        res.json({
+            success: true,
+            results,
+            summary: {
+                total: results.length,
+                successful: successCount,
+                errors: errorCount
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ ENDPOINT - Erro na transferência:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao transferir sugestão aprovada',
+            error: error.message
+        });
+    }
+};

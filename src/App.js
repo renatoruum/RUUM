@@ -42,7 +42,7 @@ function App() {
         try {
           window.parent.postMessage({ type: 'REQUEST_EMAIL' }, '*');
         } catch (e) {
-          console.error('Erro ao solicitar email do parent:', e);
+          // Erro ao solicitar email do parent
         }
       }, 500);
     }

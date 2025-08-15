@@ -71,7 +71,7 @@ const SuggestionFeed = () => {
       setClientsCrm(clientsData);
 
     } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
+      // Erro ao carregar clientes
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,6 @@ const SuggestionFeed = () => {
         return null;
       }
     } catch (error) {
-      console.error('Erro ao buscar tabela do cliente:', error);
       return null;
     }
   };
@@ -167,7 +166,6 @@ const SuggestionFeed = () => {
         function done(err) {
           setLoading(false);
           if (err) {
-            console.error('Error fetching records:', err);
             return;
           }
 
