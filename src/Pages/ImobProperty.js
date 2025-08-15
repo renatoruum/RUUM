@@ -858,7 +858,7 @@ const ImobProperty = ({ softrEmail }) => {
                                                                     {/* Badges de Destaques */}
                                                                     {property.destaques && property.destaques.length > 0 && (
                                                                         <div className={styles.badgesContainer}>
-                                                                            {property.destaques.slice(0, 3).map((destaque, badgeIndex) => (
+                                                                            {property.destaques.map((destaque, badgeIndex) => (
                                                                                 <span
                                                                                     key={badgeIndex}
                                                                                     className={styles.destaqueBadge}
@@ -908,7 +908,7 @@ const ImobProperty = ({ softrEmail }) => {
                                                             {/* Badges de Destaques para imagem única */}
                                                             {property.destaques && property.destaques.length > 0 && (
                                                                 <div className={styles.badgesContainer}>
-                                                                    {property.destaques.slice(0, 3).map((destaque, badgeIndex) => (
+                                                                    {property.destaques.map((destaque, badgeIndex) => (
                                                                         <span
                                                                             key={badgeIndex}
                                                                             className={styles.destaqueBadge}
